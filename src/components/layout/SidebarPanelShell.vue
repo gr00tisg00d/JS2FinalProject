@@ -85,10 +85,11 @@ export default {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  border-color: rgba(51, 153, 137, 0.28);
+  border-color: var(--screen-border);
   background:
-    radial-gradient(circle at top right, rgba(51, 153, 137, 0.14), transparent 42%),
-    linear-gradient(180deg, rgba(255, 250, 251, 0.025), rgba(19, 21, 21, 0.12)), #2b2c28;
+    radial-gradient(circle at top right, rgba(255, 214, 90, 0.12), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(8, 19, 29, 0.16)),
+    linear-gradient(180deg, rgba(15, 50, 77, 0.94), rgba(8, 19, 29, 0.94));
 }
 
 .store-sidebar-panel.is-expanded {
@@ -105,7 +106,7 @@ export default {
   inset: 0 auto auto 0;
   width: 100%;
   height: 3px;
-  background: linear-gradient(90deg, #339989, rgba(255, 250, 251, 0.8));
+  background: linear-gradient(90deg, var(--screen-accent), rgba(142, 230, 255, 0.82));
   opacity: 0.85;
 }
 
@@ -135,7 +136,7 @@ export default {
 
 .sidebar-panel-toggle i {
   font-size: 1rem;
-  color: rgba(125, 226, 209, 0.8);
+  color: var(--screen-highlight);
 }
 
 .sidebar-panel-body {

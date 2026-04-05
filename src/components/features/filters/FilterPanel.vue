@@ -93,10 +93,10 @@ export default {
   gap: 0.75rem;
   width: 100%;
   padding: 0.7rem 0.9rem;
-  border: 1px solid rgba(255, 250, 251, 0.08);
+  border: 1px solid var(--screen-border);
   border-radius: 0.9rem;
-  background: rgba(19, 21, 21, 0.2);
-  color: #fffafb;
+  background: rgba(7, 23, 36, 0.2);
+  color: var(--screen-text);
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -107,8 +107,8 @@ export default {
 }
 
 .filter-toggle-button:hover {
-  border-color: rgba(51, 153, 137, 0.34);
-  background: rgba(51, 153, 137, 0.12);
+  border-color: rgba(255, 214, 90, 0.36);
+  background: rgba(255, 214, 90, 0.12);
   transform: translateY(-1px);
 }
 
@@ -136,10 +136,10 @@ export default {
 
 .filter-group {
   padding: 0.95rem;
-  border: 1px solid rgba(255, 250, 251, 0.08);
+  border: 1px solid var(--screen-border);
   border-radius: 1rem;
-  background: linear-gradient(180deg, rgba(19, 21, 21, 0.26), rgba(19, 21, 21, 0.14));
-  box-shadow: inset 0 1px 0 rgba(255, 250, 251, 0.03);
+  background: linear-gradient(180deg, rgba(7, 23, 36, 0.3), rgba(7, 23, 36, 0.14));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .filter-label {
@@ -169,6 +169,6 @@ export default {
 .filter-value {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #fffafb;
+  color: var(--screen-text);
 }
 </style>

@@ -10,7 +10,9 @@ import MobileFilterModal from '@/components/features/filters/MobileFilterModal.v
 import MobileCartModal from '@/components/features/cart/MobileCartModal.vue'
 import CheckoutModal from '@/components/features/checkout/CheckoutModal.vue'
 import SidebarPanelShell from '@/components/layout/SidebarPanelShell.vue'
-import { Cart, FilterState, StoreItem } from '@/models/storeModels.js'
+import { StoreSession } from '@/models/storeModels.js'
+import { themeOptions } from '@/data/themes.js'
+import { bannerOptions } from '@/data/banners.js'
 
 export default {
   name: 'StorePage',
@@ -38,101 +40,19 @@ export default {
     },
   },
   data() {
-    const initialPriceCap = StoreItem.getPriceCap(this.items)
-
     return {
-      activeSection: 'icons',
-      activeSidebarPanel: 'filters',
-      filters: new FilterState(initialPriceCap),
-      cart: new Cart(),
-      lastOrder: null,
+      session: new StoreSession({
+        items: this.items,
+        userProfile: this.userProfile,
+      }),
     }
   },
   computed: {
-    priceCap() {
-      return StoreItem.getPriceCap(this.items)
+    themeCount() {
+      return themeOptions.length
     },
-    filteredIcons() {
-      return this.items.filter((item) => this.filters.matches(item))
-    },
-    featuredItem() {
-      return StoreItem.getFeaturedItem(this.items)
-    },
-    cartItems() {
-      return this.cart.items
-    },
-    cartCount() {
-      return this.cart.count
-    },
-    checkoutTotal() {
-      return this.cart.total
-    },
-    hasEnoughBalance() {
-      return this.userProfile.balance >= this.checkoutTotal
-    },
-    balanceShortfall() {
-      return Math.max(0, this.checkoutTotal - this.userProfile.balance)
-    },
-    canSubmitCheckout() {
-      return this.cartItems.length > 0 && this.hasEnoughBalance
-    },
-    isFilterSidebarOpen() {
-      return this.activeSidebarPanel === 'filters'
-    },
-    isCartSidebarOpen() {
-      return this.activeSidebarPanel === 'cart'
-    },
-    showFilters() {
-      return this.activeSection !== 'home'
-    },
-    showSidebarFilters() {
-      return this.showFilters && this.activeSection !== 'icons'
-    },
-  },
-  methods: {
-    openSidebarPanel(panel) {
-      this.activeSidebarPanel = panel
-    },
-    setActiveSection(section) {
-      this.activeSection = section
-    },
-    updateSearch(value) {
-      this.filters.updateSearch(value)
-    },
-    updateMinPrice(value) {
-      this.filters.updateMinPrice(value)
-    },
-    updateMaxPrice(value) {
-      this.filters.updateMaxPrice(value)
-    },
-    addItemToCart(item) {
-      if (!item) {
-        return
-      }
-
-      this.cart.addItem(item)
-      this.openSidebarPanel('cart')
-    },
-    clearCart() {
-      this.cart.clear()
-    },
-    removeFromCart(item) {
-      this.cart.remove(item)
-    },
-    incrementQty(item) {
-      this.cart.increment(item)
-    },
-    decrementQty(item) {
-      this.cart.decrement(item)
-    },
-    submitCheckout() {
-      if (!this.canSubmitCheckout) {
-        return
-      }
-
-      this.lastOrder = this.userProfile.applyCheckout(this.cart)
-
-      this.clearCart()
+    bannerCount() {
+      return bannerOptions.length
     },
   },
 }
@@ -175,25 +95,25 @@ export default {
           class="store-filter-sidebar"
           eyebrow="Browse"
           title="Filters"
-          :is-open="isFilterSidebarOpen"
-          @toggle="openSidebarPanel('filters')"
+          :is-open="session.isFilterSidebarOpen"
+          @toggle="session.openSidebarPanel('filters')"
         >
           <store-section-nav
             class="mb-3"
-            :active-section="activeSection"
-            @select-section="setActiveSection"
+            :active-section="session.activeSection"
+            @select-section="session.setActiveSection($event)"
           ></store-section-nav>
-          <div v-if="showSidebarFilters" class="sidebar-filter-slot">
+          <div v-if="session.showSidebarFilters" class="sidebar-filter-slot">
             <filter-panel
-              :filters="filters"
-              :price-cap="priceCap"
-              @update-search="updateSearch"
-              @update-min-price="updateMinPrice"
-              @update-max-price="updateMaxPrice"
+              :filters="session.filters"
+              :price-cap="session.priceCap"
+              @update-search="session.updateSearch($event)"
+              @update-min-price="session.updateMinPrice($event)"
+              @update-max-price="session.updateMaxPrice($event)"
             ></filter-panel>
           </div>
           <div
-            v-else-if="activeSection === 'icons'"
+            v-else-if="session.activeSection === 'icons'"
             class="small text-body-secondary sidebar-empty-state"
           ></div>
           <div v-else class="small text-body-secondary sidebar-empty-state">
@@ -206,21 +126,25 @@ export default {
           class="cart-sidebar-panel"
           eyebrow="Basket"
           title="Cart"
-          :is-open="isCartSidebarOpen"
-          @toggle="openSidebarPanel('cart')"
+          :is-open="session.isCartSidebarOpen"
+          @toggle="session.openSidebarPanel('cart')"
         >
           <!-- Actions Slot -->
           <template #actions>
-            <button class="btn btn-sm btn-outline-primary" type="button" @click="clearCart">
+            <button
+              class="btn btn-sm btn-outline-primary"
+              type="button"
+              @click="session.clearCart()"
+            >
               Clear
             </button>
           </template>
           <cart-summary-section
-            :cart-items="cartItems"
-            :checkout-total="checkoutTotal"
-            @remove-item="removeFromCart"
-            @increment-item="incrementQty"
-            @decrement-item="decrementQty"
+            :cart-items="session.cartItems"
+            :checkout-total="session.checkoutTotal"
+            @remove-item="session.removeFromCart($event)"
+            @increment-item="session.incrementQty($event)"
+            @decrement-item="session.decrementQty($event)"
           ></cart-summary-section>
         </sidebar-panel-shell>
       </aside>
@@ -230,67 +154,73 @@ export default {
         <div class="store-scroll">
           <!-- Home -->
           <store-home-section
-            v-if="activeSection === 'home'"
-            :featured-item="featuredItem"
+            v-if="session.activeSection === 'home'"
+            :featured-item="session.featuredItem"
             :icon-count="items.length"
-            :theme-count="3"
-            :banner-count="3"
-            :cart-count="cartCount"
-            @navigate-section="setActiveSection"
-            @add-item="addItemToCart"
+            :theme-count="themeCount"
+            :banner-count="bannerCount"
+            :cart-count="session.cartCount"
+            @navigate-section="session.setActiveSection($event)"
+            @add-item="session.addItemToCart($event)"
           ></store-home-section>
 
           <!-- Icon Section -->
           <store-icons-section
-            v-else-if="activeSection === 'icons'"
-            :items="filteredIcons"
-            :filters="filters"
-            :price-cap="priceCap"
-            @update-search="updateSearch"
-            @update-min-price="updateMinPrice"
-            @update-max-price="updateMaxPrice"
-            @add-item="addItemToCart"
+            v-else-if="session.activeSection === 'icons'"
+            :items="session.filteredItems"
+            :filters="session.filters"
+            :price-cap="session.priceCap"
+            @update-search="session.updateSearch($event)"
+            @update-min-price="session.updateMinPrice($event)"
+            @update-max-price="session.updateMaxPrice($event)"
+            @add-item="session.addItemToCart($event)"
           ></store-icons-section>
 
           <!-- Others -->
-          <store-themes-section v-else-if="activeSection === 'themes'"></store-themes-section>
-          <store-banners-section v-else-if="activeSection === 'banners'"></store-banners-section>
+          <store-themes-section
+            v-else-if="session.activeSection === 'themes'"
+            :user-profile="userProfile"
+          ></store-themes-section>
+          <store-banners-section
+            v-else-if="session.activeSection === 'banners'"
+            :user-profile="userProfile"
+          ></store-banners-section>
         </div>
       </section>
     </div>
 
     <mobile-filter-modal
-      :active-section="activeSection"
-      :show-filters="showFilters"
-      :filters="filters"
-      :price-cap="priceCap"
-      @select-section="setActiveSection"
-      @update-search="updateSearch"
-      @update-min-price="updateMinPrice"
-      @update-max-price="updateMaxPrice"
+      :active-section="session.activeSection"
+      :show-filters="session.showFilters"
+      :filters="session.filters"
+      :price-cap="session.priceCap"
+      @select-section="session.setActiveSection($event)"
+      @update-search="session.updateSearch($event)"
+      @update-min-price="session.updateMinPrice($event)"
+      @update-max-price="session.updateMaxPrice($event)"
     ></mobile-filter-modal>
     <mobile-cart-modal
-      :cart-items="cartItems"
-      :cart-count="cartCount"
-      :checkout-total="checkoutTotal"
-      @clear-cart="clearCart"
-      @remove-item="removeFromCart"
-      @increment-item="incrementQty"
-      @decrement-item="decrementQty"
+      :cart-items="session.cartItems"
+      :cart-count="session.cartCount"
+      :checkout-total="session.checkoutTotal"
+      @clear-cart="session.clearCart()"
+      @remove-item="session.removeFromCart($event)"
+      @increment-item="session.incrementQty($event)"
+      @decrement-item="session.decrementQty($event)"
     ></mobile-cart-modal>
     <checkout-modal
-      :cart-items="cartItems"
-      :cart-count="cartCount"
-      :checkout-total="checkoutTotal"
+      :cart-items="session.cartItems"
+      :cart-count="session.cartCount"
+      :checkout-total="session.checkoutTotal"
       :wallet-balance="userProfile.balance"
-      :has-enough-balance="hasEnoughBalance"
-      :balance-shortfall="balanceShortfall"
-      :can-submit="canSubmitCheckout"
-      :last-order="lastOrder"
-      @submit-order="submitCheckout"
-      @remove-item="removeFromCart"
-      @increment-item="incrementQty"
-      @decrement-item="decrementQty"
+      :has-enough-balance="session.hasEnoughBalance"
+      :balance-shortfall="session.balanceShortfall"
+      :can-submit="session.canSubmitCheckout"
+      :last-order="session.lastOrder"
+      @submit-order="session.submitCheckout()"
+      @remove-item="session.removeFromCart($event)"
+      @increment-item="session.incrementQty($event)"
+      @decrement-item="session.decrementQty($event)"
     ></checkout-modal>
   </main>
 </template>

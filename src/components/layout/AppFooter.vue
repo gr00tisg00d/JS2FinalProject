@@ -33,7 +33,8 @@ export default {
 
 <style scoped>
 footer {
-  background: #131515;
+  background: linear-gradient(180deg, rgba(8, 19, 29, 0.94), rgba(11, 37, 58, 0.98));
+  color: var(--screen-text);
 }
 
 footer a {
@@ -41,10 +42,10 @@ footer a {
 }
 
 footer a:hover {
-  color: #339989;
+  color: var(--screen-accent);
 }
 
 .brand-accent {
-  color: #339989;
+  color: var(--screen-accent);
 }
 </style>

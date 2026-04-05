@@ -9,31 +9,50 @@
 // $custom-background: #252422; // Carbon Black
 // $custom-surface: #403d39; // Charcoal Brown
 
-// Gaming Theme
-$custom-primary: #339989;
-$custom-primaryhover: #7de2d1;
-$custom-accent: #fffafb;
-$custom-background: #131515;
-$custom-surface: #2b2c28;
+// Retro CRT Theme
+$custom-primary: #ffd65a;
+$custom-primaryhover: #8ee6ff;
+$custom-accent: #eefbff;
+$custom-background: #08131d;
+$custom-surface: #0f324d;
 
 // Variables to control xp bar ( for gradient fill % )
 
 html,
 body {
   height: 100dvh;
+  min-height: 100dvh;
   overflow: hidden;
 }
 
 #app {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
   height: 100dvh;
+  min-height: 100dvh;
   overflow: hidden;
 }
 
-#app > nav,
-#app > footer {
-  flex: 0 0 auto;
+.monitor-screen {
+  --screen-text: #{$custom-accent};
+  --screen-muted: rgba(224, 247, 255, 0.72);
+  --screen-accent: #{$custom-primary};
+  --screen-accent-soft: rgba(255, 214, 90, 0.18);
+  --screen-highlight: #{$custom-primaryhover};
+  --screen-panel: rgba(11, 37, 58, 0.92);
+  --screen-panel-strong: rgba(7, 23, 36, 0.94);
+  --screen-border: rgba(161, 224, 255, 0.24);
+  --screen-shadow: rgba(0, 0, 0, 0.42);
+  --screen-bg-rgb: 8, 19, 29;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 0.9rem;
+  background:
+    radial-gradient(circle at top, rgba(107, 223, 255, 0.08), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.08)),
+    linear-gradient(180deg, rgba(8, 19, 29, 0.96), rgba(10, 39, 62, 0.96));
+  color: var(--screen-text);
 }
 
 .store-page-main {
@@ -52,8 +71,11 @@ body {
 }
 
 body {
-  background: rgb(15, 15, 15);
+  background:
+    radial-gradient(circle at top, rgba(150, 198, 255, 0.26), transparent 24%),
+    linear-gradient(180deg, #35507c 0%, #18283d 52%, #0c121d 100%);
   color: $custom-accent;
+  font-family: 'Trebuchet MS', 'Verdana', sans-serif;
 }
 
 .store-container {
@@ -110,7 +132,9 @@ body::before {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: inherit;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 42%),
+    radial-gradient(circle at bottom, rgba(255, 225, 128, 0.12), transparent 26%);
   pointer-events: none;
 }
 
@@ -122,13 +146,41 @@ body::before {
   box-shadow: none;
 }
 
-.app-surface {
-  // background-color: $custom-surface;
+.btn {
+  border-radius: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.btn-primary,
+.btn-outline-primary:hover,
+.btn-outline-primary:focus,
+.btn-outline-primary:active {
+  border-color: rgba($custom-primary, 0.82);
+  background: linear-gradient(
+    180deg,
+    rgba($custom-primary, 0.98),
+    rgba(color.scale($custom-primary, $lightness: -18%), 0.94)
+  );
+  color: #1b1a10;
+}
+
+.btn-outline-primary {
+  border-color: rgba($custom-primaryhover, 0.38);
+  background: rgba($custom-primaryhover, 0.08);
   color: $custom-accent;
-  // border: 1px solid rgba($custom-primary, 0.25);
+}
+
+.app-surface {
+  color: $custom-accent;
   margin-top: 0;
-  // box-shadow: 0 20px 45px rgba($custom-background, 0.22);
-  // box-shadow: 0 0 40px 10px black;
+  border: 1px solid rgba($custom-primaryhover, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
+    linear-gradient(180deg, rgba($custom-surface, 0.94), rgba($custom-background, 0.88));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 14px 28px rgba($custom-background, 0.28);
 }
 
 .store-content-panel.app-surface {
@@ -155,7 +207,7 @@ body::before {
   flex-direction: column;
   gap: 0.25rem;
   padding-bottom: 0.8rem;
-  border-bottom: 1px solid rgba($custom-accent, 0.08);
+  border-bottom: 1px solid rgba($custom-primaryhover, 0.14);
 }
 
 .panel-header-split {
@@ -171,7 +223,7 @@ body::before {
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba($custom-primaryhover, 0.9);
+  color: rgba($custom-primary, 0.92);
 }
 
 .panel-title {

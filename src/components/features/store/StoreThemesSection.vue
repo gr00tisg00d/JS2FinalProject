@@ -1,48 +1,31 @@
 <script>
+import { themeOptions } from '@/data/themes.js'
+import { ThemeCatalog } from '@/models/storeModels.js'
+
 export default {
   name: 'StoreThemesSection',
+  props: {
+    userProfile: {
+      type: Object,
+      required: true,
+    },
+  },
   data() {
-    const themes = [
-      {
-        name: 'Signal Ember',
-        accent: '#eb5e28',
-        background: 'linear-gradient(135deg, #252422 0%, #403d39 100%)',
-        editor: '#1f1d1a',
-        description: 'Warm contrast for debugging sessions and readable terminal output.',
-      },
-      {
-        name: 'Circuit Tide',
-        accent: '#2ec4b6',
-        background: 'linear-gradient(135deg, #122c34 0%, #224870 100%)',
-        editor: '#0f1f24',
-        description: 'Cool, technical blues for systems work and calmer focus blocks.',
-      },
-      {
-        name: 'Night Bloom',
-        accent: '#f4a261',
-        background: 'linear-gradient(135deg, #2b1d26 0%, #4a2f48 100%)',
-        editor: '#1d1420',
-        description: 'A softer late-night palette that keeps the workspace atmospheric.',
-      },
-    ]
-
     return {
-      themes,
-      selectedThemeName: themes[0].name,
-      appliedThemeName: '',
+      catalog: new ThemeCatalog(themeOptions, this.userProfile),
     }
   },
   computed: {
     selectedTheme() {
-      return this.themes.find((theme) => theme.name === this.selectedThemeName)
+      return this.catalog.selectedTheme
     },
   },
   methods: {
     selectTheme(themeName) {
-      this.selectedThemeName = themeName
+      this.catalog.select(themeName)
     },
     applyTheme() {
-      this.appliedThemeName = this.selectedTheme?.name ?? ''
+      this.catalog.apply()
     },
   },
 }
@@ -58,19 +41,19 @@ export default {
           session.
         </p>
       </div>
-      <span v-if="appliedThemeName" class="small text-body-secondary"
-        >Applied: {{ appliedThemeName }}</span
+      <span v-if="catalog.appliedThemeName" class="small text-body-secondary"
+        >Applied: {{ catalog.appliedThemeName }}</span
       >
     </div>
 
     <div class="row g-3">
       <div class="col-12 col-lg-7">
         <div class="row g-2">
-          <div class="col-12" v-for="theme in themes" :key="theme.name">
+          <div class="col-12" v-for="theme in catalog.themes" :key="theme.name">
             <button
               class="btn w-100 text-start p-3 app-surface store-choice-card"
               type="button"
-              :class="{ 'is-selected': selectedThemeName === theme.name }"
+              :class="{ 'is-selected': catalog.selectedName === theme.name }"
               @click="selectTheme(theme.name)"
             >
               <div class="d-flex align-items-center justify-content-between gap-3">

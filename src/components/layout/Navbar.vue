@@ -81,16 +81,18 @@ export default {
 
 <style scoped>
 .navbar {
-  background-color: #2b2c28;
-  color: #fffafb;
+  background-color: var(--screen-panel-strong);
+  color: var(--screen-text);
 }
 
 .app-navbar {
   width: 100%;
   background:
-    radial-gradient(circle at top right, rgba(51, 153, 137, 0.14), transparent 34%),
-    linear-gradient(180deg, rgba(255, 250, 251, 0.03), rgba(19, 21, 21, 0.14)), #2b2c28;
-  box-shadow: 0 18px 36px rgba(19, 21, 21, 0.24);
+    radial-gradient(circle at top right, rgba(255, 214, 90, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(8, 19, 29, 0.12)),
+    linear-gradient(180deg, rgba(14, 51, 78, 0.94), rgba(8, 19, 29, 0.96));
+  border-bottom: 1px solid var(--screen-border);
+  box-shadow: 0 18px 36px var(--screen-shadow);
 }
 
 .app-navbar-inner {
@@ -127,10 +129,10 @@ export default {
   justify-content: center;
   min-width: 6.5rem;
   padding: 0.55rem 0.8rem;
-  border: 1px solid rgba(255, 250, 251, 0.08);
+  border: 1px solid var(--screen-border);
   border-radius: 0.95rem;
-  background: rgba(19, 21, 21, 0.28);
-  box-shadow: inset 0 1px 0 rgba(255, 250, 251, 0.03);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
 .navbar-status-label {
@@ -138,13 +140,13 @@ export default {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(125, 226, 209, 0.78);
+  color: var(--screen-accent);
 }
 
 .navbar-status-value {
   font-size: 0.92rem;
   font-weight: 700;
-  color: #fffafb;
+  color: var(--screen-text);
 }
 
 .navbar-avatar-shell {
@@ -155,12 +157,11 @@ export default {
   height: 3.25rem;
   flex: 0 0 3.25rem;
   overflow: hidden;
-  border: 1px solid rgba(51, 153, 137, 0.42);
+  border: 1px solid rgba(142, 230, 255, 0.4);
   border-radius: 50%;
   background:
-    radial-gradient(circle at top, rgba(51, 153, 137, 0.18), transparent 60%),
-    rgba(19, 21, 21, 0.42);
-  box-shadow: inset 0 1px 0 rgba(255, 250, 251, 0.06);
+    radial-gradient(circle at top, rgba(255, 214, 90, 0.18), transparent 60%), rgba(7, 23, 36, 0.52);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .navbar-avatar-image {
@@ -173,26 +174,26 @@ export default {
 
 .navbar-avatar-fallback {
   font-size: 1.3rem;
-  color: #fffafb;
+  color: var(--screen-text);
 }
 
 .icon-btn {
-  border: 1px solid rgba(51, 153, 137, 0.35);
-  background: rgba(51, 153, 137, 0.12);
-  color: #fffafb;
+  border: 1px solid rgba(142, 230, 255, 0.28);
+  background: rgba(142, 230, 255, 0.08);
+  color: var(--screen-text);
   transition: 0.4s ease;
 }
 
 .icon-btn:hover {
   filter: brightness(1.15);
-  background: rgba(51, 153, 137, 0.2);
+  background: rgba(255, 214, 90, 0.18);
 }
 
 .icon-btn:active,
 .icon-btn.active {
-  border-color: #339989;
-  background: rgba(51, 153, 137, 0.6);
-  color: #fffafb;
+  border-color: var(--screen-accent);
+  background: rgba(255, 214, 90, 0.42);
+  color: #1b1a10;
 }
 
 @media (max-width: 575.98px) {

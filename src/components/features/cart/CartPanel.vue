@@ -79,22 +79,22 @@ export default {
 
 .cart-empty-state {
   padding: 1.1rem;
-  border: 1px dashed rgba(255, 250, 251, 0.16);
+  border: 1px dashed var(--screen-border);
   border-radius: 1rem;
-  background: rgba(19, 21, 21, 0.22);
+  background: rgba(7, 23, 36, 0.24);
 }
 
 .cart-empty-title {
   margin-bottom: 0.25rem;
   font-size: 0.95rem;
   font-weight: 700;
-  color: #fffafb;
+  color: var(--screen-text);
 }
 
 .cart-empty-copy {
   font-size: 0.82rem;
   line-height: 1.5;
-  color: rgba(125, 226, 209, 0.78);
+  color: var(--screen-muted);
 }
 
 .cart-item {
@@ -102,18 +102,18 @@ export default {
   grid-template-columns: 56px minmax(0, 1fr);
   gap: 0.85rem;
   padding: 0.85rem;
-  border: 1px solid rgba(255, 250, 251, 0.08);
+  border: 1px solid var(--screen-border);
   border-radius: 1rem;
-  background: linear-gradient(180deg, rgba(19, 21, 21, 0.28), rgba(19, 21, 21, 0.14));
+  background: linear-gradient(180deg, rgba(7, 23, 36, 0.32), rgba(7, 23, 36, 0.14));
 }
 
 .cart-item-image {
   width: 56px;
   height: 56px;
   object-fit: cover;
-  border: 1px solid rgba(255, 250, 251, 0.08);
+  border: 1px solid var(--screen-border);
   border-radius: 0.85rem;
-  background: rgba(19, 21, 21, 0.3);
+  background: rgba(7, 23, 36, 0.38);
 }
 
 .cart-item-content {
@@ -133,7 +133,7 @@ export default {
 .cart-item-title {
   font-size: 0.92rem;
   font-weight: 700;
-  color: #fffafb;
+  color: var(--screen-text);
 }
 
 .cart-item-meta {
@@ -141,7 +141,7 @@ export default {
   flex-wrap: wrap;
   gap: 0.35rem 0.85rem;
   font-size: 0.78rem;
-  color: rgba(125, 226, 209, 0.82);
+  color: var(--screen-muted);
 }
 
 .cart-item-actions {
@@ -157,10 +157,10 @@ export default {
   align-items: center;
   justify-content: center;
   padding: 0.28rem 0.6rem;
-  border: 1px solid rgba(51, 153, 137, 0.32);
+  border: 1px solid rgba(255, 214, 90, 0.34);
   border-radius: 999px;
-  background: rgba(51, 153, 137, 0.12);
-  color: #fffafb;
+  background: rgba(255, 214, 90, 0.14);
+  color: var(--screen-text);
   font-size: 0.72rem;
   font-weight: 700;
   white-space: nowrap;

@@ -62,9 +62,9 @@ export default {
   flex-direction: column;
   gap: 0.35rem;
   padding: 0.35rem;
-  border: 1px solid rgba(255, 250, 251, 0.08);
-  background: linear-gradient(180deg, rgba(19, 21, 21, 0.22), rgba(19, 21, 21, 0.1));
-  box-shadow: inset 0 1px 0 rgba(255, 250, 251, 0.03);
+  border: 1px solid var(--screen-border);
+  background: linear-gradient(180deg, rgba(7, 23, 36, 0.34), rgba(7, 23, 36, 0.14));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .sidebar-nav-button {
@@ -78,7 +78,7 @@ export default {
   border-left: 3px solid transparent;
   border-radius: 0.8rem;
   background: transparent;
-  color: rgba(255, 250, 251, 0.76);
+  color: var(--screen-muted);
   font-size: 0.95rem;
   font-weight: 700;
   line-height: 1.2;
@@ -92,19 +92,19 @@ export default {
 }
 
 .sidebar-nav-button:hover {
-  border-color: rgba(51, 153, 137, 0.16);
-  border-left-color: rgba(51, 153, 137, 0.55);
-  background: rgba(51, 153, 137, 0.08);
-  color: #fffafb;
+  border-color: rgba(255, 214, 90, 0.2);
+  border-left-color: rgba(255, 214, 90, 0.72);
+  background: rgba(255, 214, 90, 0.1);
+  color: var(--screen-text);
 }
 
 .sidebar-nav-button.active {
-  border-color: rgba(51, 153, 137, 0.26);
-  border-left-color: #339989;
-  background: linear-gradient(90deg, rgba(51, 153, 137, 0.18), rgba(51, 153, 137, 0.04));
-  color: #fffafb;
+  border-color: rgba(142, 230, 255, 0.28);
+  border-left-color: var(--screen-highlight);
+  background: linear-gradient(90deg, rgba(255, 214, 90, 0.22), rgba(142, 230, 255, 0.06));
+  color: var(--screen-text);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 250, 251, 0.03),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
     0 8px 18px rgba(0, 0, 0, 0.08);
 }
 </style>
