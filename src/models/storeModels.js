@@ -349,11 +349,12 @@ export class CatalogOption {
 }
 
 export class ThemeOption extends CatalogOption {
-    constructor({ name, accent, background, editor, description = '' }) {
+    constructor({ name, accent, background, editor, idePalette = {}, description = '' }) {
         super({ name, description })
         this.accent = accent
         this.background = background
         this.editor = editor
+        this.idePalette = idePalette
     }
 }
 
