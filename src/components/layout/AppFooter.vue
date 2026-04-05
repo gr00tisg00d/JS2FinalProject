@@ -31,4 +31,20 @@ export default {
   </footer>
 </template>
 
-<style scoped></style>
+<style scoped>
+footer {
+  background: #131515;
+}
+
+footer a {
+  color: inherit;
+}
+
+footer a:hover {
+  color: #339989;
+}
+
+.brand-accent {
+  color: #339989;
+}
+</style>

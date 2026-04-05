@@ -116,4 +116,18 @@ export default {
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.checkout-wallet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+}
+
+@media (max-width: 575.98px) {
+  .checkout-wallet-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+</style>

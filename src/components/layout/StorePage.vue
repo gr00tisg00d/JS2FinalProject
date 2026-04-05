@@ -10,8 +10,7 @@ import MobileFilterModal from '@/components/features/filters/MobileFilterModal.v
 import MobileCartModal from '@/components/features/cart/MobileCartModal.vue'
 import CheckoutModal from '@/components/features/checkout/CheckoutModal.vue'
 import SidebarPanelShell from '@/components/layout/SidebarPanelShell.vue'
-
-const getPriceCap = (items) => Math.max(...items.map((item) => item.cost))
+import { Cart, FilterState, StoreItem } from '@/models/storeModels.js'
 
 export default {
   name: 'StorePage',
@@ -39,43 +38,34 @@ export default {
     },
   },
   data() {
-    const initialPriceCap = getPriceCap(this.items)
+    const initialPriceCap = StoreItem.getPriceCap(this.items)
 
     return {
       activeSection: 'icons',
       activeSidebarPanel: 'filters',
-      filters: {
-        search: '',
-        minPrice: 1,
-        maxPrice: initialPriceCap,
-      },
-      cartItems: [],
+      filters: new FilterState(initialPriceCap),
+      cart: new Cart(),
       lastOrder: null,
     }
   },
   computed: {
     priceCap() {
-      return getPriceCap(this.items)
+      return StoreItem.getPriceCap(this.items)
     },
     filteredIcons() {
-      const search = this.filters.search.trim().toLowerCase()
-
-      return this.items.filter((item) => {
-        const matchesSearch = search.length === 0 || item.title.toLowerCase().includes(search)
-        const matchesPrice =
-          item.cost >= this.filters.minPrice && item.cost <= this.filters.maxPrice
-
-        return matchesSearch && matchesPrice
-      })
+      return this.items.filter((item) => this.filters.matches(item))
     },
     featuredItem() {
-      return [...this.items].sort((left, right) => right.cost - left.cost)[0] ?? null
+      return StoreItem.getFeaturedItem(this.items)
+    },
+    cartItems() {
+      return this.cart.items
     },
     cartCount() {
-      return this.cartItems.reduce((count, item) => count + item.qty, 0)
+      return this.cart.count
     },
     checkoutTotal() {
-      return this.cartItems.reduce((total, item) => total + item.cost * item.qty, 0)
+      return this.cart.total
     },
     hasEnoughBalance() {
       return this.userProfile.balance >= this.checkoutTotal
@@ -107,102 +97,40 @@ export default {
       this.activeSection = section
     },
     updateSearch(value) {
-      this.filters.search = value
+      this.filters.updateSearch(value)
     },
     updateMinPrice(value) {
-      this.filters.minPrice = Math.min(Number(value), this.filters.maxPrice)
+      this.filters.updateMinPrice(value)
     },
     updateMaxPrice(value) {
-      this.filters.maxPrice = Math.max(Number(value), this.filters.minPrice)
+      this.filters.updateMaxPrice(value)
     },
     addItemToCart(item) {
       if (!item) {
         return
       }
 
-      const existingItem = this.cartItems.find((cartItem) => cartItem.title === item.title)
-
-      if (existingItem) {
-        existingItem.qty += 1
-        this.openSidebarPanel('cart')
-        return
-      }
-
-      this.cartItems.push({
-        title: item.title,
-        img: item.img,
-        cost: item.cost,
-        itemType: 'icon',
-        description: item.description,
-        perk: item.perk,
-        bestFor: item.bestFor,
-        qty: 1,
-      })
-
+      this.cart.addItem(item)
       this.openSidebarPanel('cart')
     },
     clearCart() {
-      this.cartItems.splice(0, this.cartItems.length)
+      this.cart.clear()
     },
     removeFromCart(item) {
-      const index = this.cartItems.indexOf(item)
-
-      if (index >= 0) {
-        this.cartItems.splice(index, 1)
-      }
+      this.cart.remove(item)
     },
     incrementQty(item) {
-      if (item) {
-        item.qty += 1
-      }
+      this.cart.increment(item)
     },
     decrementQty(item) {
-      if (!item) {
-        return
-      }
-
-      item.qty -= 1
-
-      if (item.qty <= 0) {
-        this.removeFromCart(item)
-      }
+      this.cart.decrement(item)
     },
     submitCheckout() {
       if (!this.canSubmitCheckout) {
         return
       }
 
-      this.userProfile.balance -= this.checkoutTotal
-
-      this.cartItems.forEach((item) => {
-        const inventoryItem = this.userProfile.inventory.find((entry) => entry.title === item.title)
-
-        if (inventoryItem) {
-          inventoryItem.qty += item.qty
-          return
-        }
-
-        this.userProfile.inventory.push({
-          title: item.title,
-          img: item.img,
-          itemType: item.itemType,
-          qty: item.qty,
-        })
-      })
-
-      if (!this.userProfile.activeIcon) {
-        const firstPurchasedIcon = this.cartItems.find((item) => item.itemType === 'icon')
-
-        if (firstPurchasedIcon) {
-          this.userProfile.activeIcon = firstPurchasedIcon.title
-        }
-      }
-
-      this.lastOrder = {
-        items: this.cartCount,
-        total: this.checkoutTotal,
-        remainingBalance: this.userProfile.balance,
-      }
+      this.lastOrder = this.userProfile.applyCheckout(this.cart)
 
       this.clearCart()
     },
@@ -267,9 +195,7 @@ export default {
           <div
             v-else-if="activeSection === 'icons'"
             class="small text-body-secondary sidebar-empty-state"
-          >
-            Icon filters are displayed above the grid.
-          </div>
+          ></div>
           <div v-else class="small text-body-secondary sidebar-empty-state">
             No filters on Home.
           </div>

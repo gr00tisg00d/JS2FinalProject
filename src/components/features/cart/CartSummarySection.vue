@@ -49,4 +49,17 @@ export default {
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.cart-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-inline: 0;
+  padding-top: 0.9rem;
+  border: 0;
+  border-top: 1px solid rgba(255, 250, 251, 0.08);
+  border-radius: 0;
+  background: transparent;
+}
+</style>

@@ -78,4 +78,85 @@ export default {
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.store-sidebar-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border-color: rgba(51, 153, 137, 0.28);
+  background:
+    radial-gradient(circle at top right, rgba(51, 153, 137, 0.14), transparent 42%),
+    linear-gradient(180deg, rgba(255, 250, 251, 0.025), rgba(19, 21, 21, 0.12)), #2b2c28;
+}
+
+.store-sidebar-panel.is-expanded {
+  flex: 1 1 auto;
+}
+
+.store-sidebar-panel.is-collapsed {
+  flex: 0 0 auto;
+}
+
+.store-sidebar-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #339989, rgba(255, 250, 251, 0.8));
+  opacity: 0.85;
+}
+
+.sidebar-panel-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.sidebar-panel-toggle-label {
+  flex: 1 1 auto;
+  justify-content: flex-start;
+}
+
+.sidebar-panel-toggle-icon {
+  width: auto;
+  flex: 0 0 auto;
+  justify-content: center;
+}
+
+.sidebar-panel-toggle i {
+  font-size: 1rem;
+  color: rgba(125, 226, 209, 0.8);
+}
+
+.sidebar-panel-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  transition: grid-template-rows 0.28s ease;
+}
+
+.sidebar-panel-body.collapsed {
+  grid-template-rows: 0fr;
+  flex: 0 0 auto;
+}
+
+.sidebar-panel-body-inner {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+</style>

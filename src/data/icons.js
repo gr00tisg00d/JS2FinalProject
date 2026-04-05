@@ -1,6 +1,8 @@
+import { createIconCatalog } from '@/models/storeModels.js'
+
 const iconAsset = (fileName) => new URL(`../Images/icons/${fileName}`, import.meta.url).href
 
-export default [
+export default createIconCatalog([
 	{
 		title: "Bubble Devourer",
 		img: iconAsset('bubble-devourer.png'),
@@ -176,4 +178,4 @@ export default [
 		perk: "It justifies the price by reading as the most exclusive option in the catalog.",
 		bestFor: "rare collections and trophy-style profiles",
 	},
-]
+])

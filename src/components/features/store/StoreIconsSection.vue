@@ -1,4 +1,6 @@
 <script>
+const bannerHeroImage = new URL('../../../Images/banners/banner01.jpg', import.meta.url).href
+
 export default {
   name: 'StoreIconsSection',
   data() {
@@ -30,7 +32,7 @@ export default {
   computed: {
     heroBackgroundStyle() {
       return {
-        '--store-hero-image': "url('/Images/banners/banner01.jpg')",
+        '--store-hero-image': `url('${bannerHeroImage}')`,
       }
     },
     itemRows() {
@@ -314,9 +316,15 @@ export default {
               <div class="store-item-name text-truncate">{{ entry.item.title }}</div>
               <p class="store-item-summary">{{ entry.item.shortDescription }}</p>
             </div>
-            <!-- <div class="card-footer border-0 bg-transparent store-item-footer">
-								<button class="btn btn-sm btn-primary w-100 store-item-button" type="button" @click="$emit('add-item', entry.item)">Add to cart</button>
-							</div> -->
+            <div class="card-footer border-0 bg-transparent store-item-footer">
+              <button
+                class="btn btn-sm btn-primary w-100 store-item-button"
+                type="button"
+                @click.stop="$emit('add-item', entry.item)"
+              >
+                Add to cart
+              </button>
+            </div>
           </div>
         </div>
       </div>
