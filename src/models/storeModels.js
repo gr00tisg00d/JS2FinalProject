@@ -8,6 +8,7 @@ export class StoreItem {
         perk = '',
         bestFor = '',
         itemType = 'item',
+        ...attributes
     }) {
         this.title = title
         this.img = img
@@ -17,6 +18,7 @@ export class StoreItem {
         this.perk = perk
         this.bestFor = bestFor
         this.itemType = itemType
+        Object.assign(this, attributes)
     }
 
     matchesSearch(searchTerm) {
@@ -52,6 +54,25 @@ export class StoreItem {
 
     static getFeaturedItem(items) {
         return [...items].sort((left, right) => right.cost - left.cost)[0] ?? null
+    }
+
+    static getRarityTier(item, maxPrice) {
+        const safeCap = Math.max(1, maxPrice)
+        const priceRatio = item.cost / safeCap
+
+        if (priceRatio >= 0.85) {
+            return 'legendary'
+        }
+
+        if (priceRatio >= 0.65) {
+            return 'epic'
+        }
+
+        if (priceRatio >= 0.4) {
+            return 'rare'
+        }
+
+        return 'common'
     }
 }
 
@@ -183,6 +204,8 @@ export class FilterState {
         this.search = ''
         this.minPrice = 1
         this.maxPrice = maxPrice
+        this.rarity = 'all'
+        this.sortBy = 'featured'
     }
 
     updateSearch(value) {
@@ -197,8 +220,35 @@ export class FilterState {
         this.maxPrice = Math.max(Number(value), this.minPrice)
     }
 
-    matches(item) {
-        return item.matchesSearch(this.search) && item.isWithinPriceRange(this.minPrice, this.maxPrice)
+    updateRarity(value) {
+        this.rarity = value
+    }
+
+    updateSort(value) {
+        this.sortBy = value
+    }
+
+    matches(item, maxPrice) {
+        const matchesRarity = this.rarity === 'all' || StoreItem.getRarityTier(item, maxPrice) === this.rarity
+
+        return matchesRarity && item.matchesSearch(this.search) && item.isWithinPriceRange(this.minPrice, this.maxPrice)
+    }
+
+    sortItems(items) {
+        const sortedItems = [...items]
+
+        switch (this.sortBy) {
+            case 'price-asc':
+                return sortedItems.sort((left, right) => left.cost - right.cost)
+            case 'price-desc':
+                return sortedItems.sort((left, right) => right.cost - left.cost)
+            case 'name-asc':
+                return sortedItems.sort((left, right) => left.title.localeCompare(right.title))
+            case 'rarity-desc':
+                return sortedItems.sort((left, right) => right.cost - left.cost)
+            default:
+                return sortedItems
+        }
     }
 }
 
@@ -206,17 +256,53 @@ export class UserProfileModel {
     constructor({
         balance = 100,
         level = 1,
+        experience = 0,
         inventory = [],
         activeIcon = '',
         activeBanner = '',
         activeIDETheme = '',
+        displayName = 'Debugger Zero',
+        handle = '@debugger.zero',
+        rankLabel = '#19 Global',
+        roleLabel = 'Kernel Hunter',
+        joinedLabel = 'Joined Apr 2026',
+        gamesPlayed = 128,
+        successRate = 91,
+        bugfixStreak = 14,
+        flawlessRuns = 9,
     }) {
         this.balance = balance
         this.level = level
+        this.experience = experience
         this.inventory = inventory.map((entry) => new InventoryEntry(entry))
         this.activeIcon = activeIcon
         this.activeBanner = activeBanner
         this.activeIDETheme = activeIDETheme
+        this.displayName = displayName
+        this.handle = handle
+        this.rankLabel = rankLabel
+        this.roleLabel = roleLabel
+        this.joinedLabel = joinedLabel
+        this.gamesPlayed = gamesPlayed
+        this.successRate = successRate
+        this.bugfixStreak = bugfixStreak
+        this.flawlessRuns = flawlessRuns
+    }
+
+    get experienceGoal() {
+        return 100
+    }
+
+    get clampedExperience() {
+        return Math.max(0, Math.min(this.experience, this.experienceGoal))
+    }
+
+    get experienceProgressPercent() {
+        return (this.clampedExperience / this.experienceGoal) * 100
+    }
+
+    get experienceRemaining() {
+        return this.experienceGoal - this.clampedExperience
     }
 
     addInventoryItem(item, quantity) {
@@ -358,7 +444,7 @@ export class StoreSession {
     }
 
     get filteredItems() {
-        return this.items.filter((item) => this.filters.matches(item))
+        return this.filters.sortItems(this.items.filter((item) => this.filters.matches(item, this.priceCap)))
     }
 
     get featuredItem() {
@@ -423,6 +509,14 @@ export class StoreSession {
 
     updateMaxPrice(value) {
         this.filters.updateMaxPrice(value)
+    }
+
+    updateRarity(value) {
+        this.filters.updateRarity(value)
+    }
+
+    updateSort(value) {
+        this.filters.updateSort(value)
     }
 
     addItemToCart(item) {

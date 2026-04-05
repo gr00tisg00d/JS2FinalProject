@@ -59,7 +59,9 @@ export default {
 </script>
 
 <template>
-  <main class="container flex-grow-1 py-3 d-flex flex-column overflow-hidden store-page-main">
+  <main
+    class="w-100 flex-grow-1 py-3 px-3 px-lg-4 d-flex flex-column overflow-hidden store-page-main"
+  >
     <!-- Mobile: open filter/cart modals -->
     <div
       class="position-fixed top-50 end-0 translate-middle-y me-3 d-flex flex-column gap-2 d-lg-none z-3"
@@ -173,6 +175,8 @@ export default {
             @update-search="session.updateSearch($event)"
             @update-min-price="session.updateMinPrice($event)"
             @update-max-price="session.updateMaxPrice($event)"
+            @update-rarity="session.updateRarity($event)"
+            @update-sort="session.updateSort($event)"
             @add-item="session.addItemToCart($event)"
           ></store-icons-section>
 

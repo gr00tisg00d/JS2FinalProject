@@ -28,7 +28,14 @@ export default {
       required: true,
     },
   },
-  emits: ['add-item', 'update-search', 'update-min-price', 'update-max-price'],
+  emits: [
+    'add-item',
+    'update-search',
+    'update-min-price',
+    'update-max-price',
+    'update-rarity',
+    'update-sort',
+  ],
   computed: {
     heroBackgroundStyle() {
       return {
@@ -65,6 +72,40 @@ export default {
     document.removeEventListener('keydown', this.handleDocumentKeydown)
   },
   methods: {
+    normalizePriceInput(rawValue, fallbackValue) {
+      const numericValue = Number(rawValue)
+
+      if (!Number.isFinite(numericValue)) {
+        return fallbackValue
+      }
+
+      return Math.max(1, Math.min(this.priceCap, Math.round(numericValue)))
+    },
+    getRarityTier(item) {
+      const priceRatio = item.cost / this.priceCap
+
+      if (priceRatio >= 0.85) {
+        return 'legendary'
+      }
+
+      if (priceRatio >= 0.65) {
+        return 'epic'
+      }
+
+      if (priceRatio >= 0.4) {
+        return 'rare'
+      }
+
+      return 'common'
+    },
+    getRarityLabel(item) {
+      return {
+        common: 'Common',
+        rare: 'Rare',
+        epic: 'Epic',
+        legendary: 'Legendary',
+      }[this.getRarityTier(item)]
+    },
     handleResize() {
       this.viewportWidth = window.innerWidth
       this.syncPreviewToActiveCard()
@@ -107,14 +148,6 @@ export default {
         288,
         Math.max(220, containerRect.right - containerRect.left - horizontalPadding * 2),
       )
-      const previewHeight = 220
-      const headerBottom = document.querySelector('header')?.getBoundingClientRect().bottom ?? 0
-      const gap = 18
-      const containerLeft = containerRect.left + horizontalPadding
-      const containerRight = containerRect.right - horizontalPadding
-      const containerTop = Math.max(containerRect.top + verticalPadding, headerBottom + 12)
-      const containerBottom = containerRect.bottom - verticalPadding
-      const preferredRight = rect.right + gap
       const fallbackLeft = rect.left - previewWidth - gap
       const canPlaceRight = preferredRight + previewWidth <= containerRight
       const canPlaceLeft = fallbackLeft >= containerLeft
@@ -145,7 +178,7 @@ export default {
     },
     getCardsPerRow() {
       if (this.viewportWidth >= 1200) {
-        return 5
+        return 6
       }
 
       if (this.viewportWidth >= 992) {
@@ -199,12 +232,24 @@ export default {
       this.hoveredIndex = -1
       this.activeCardElement = null
     },
+    updateMinPriceFromField(event) {
+      this.$emit(
+        'update-min-price',
+        this.normalizePriceInput(event.target.value, this.filters.minPrice),
+      )
+    },
+    updateMaxPriceFromField(event) {
+      this.$emit(
+        'update-max-price',
+        this.normalizePriceInput(event.target.value, this.filters.maxPrice),
+      )
+    },
   },
 }
 </script>
 
 <template>
-  <div class="store-catalog d-flex flex-column gap-3" :class="{ 'has-active-item': hoveredItem }">
+  <div class="store-catalog d-flex flex-column" :class="{ 'has-active-item': hoveredItem }">
     <div
       class="store-catalog-focus-overlay"
       :class="{ 'is-active': hoveredItem }"
@@ -221,7 +266,7 @@ export default {
       </div>
     </div>
 
-    <div class="store-inline-filters app-surface rounded p-3" :style="heroBackgroundStyle">
+    <div class="store-inline-filters" :style="heroBackgroundStyle">
       <div class="store-inline-filter-search">
         <label class="visually-hidden" for="icon-search-input">Search icons</label>
         <div class="store-inline-search-field">
@@ -237,35 +282,77 @@ export default {
           />
         </div>
       </div>
-      <div class="store-inline-filter-range">
-        <div class="filter-slider-labels">
-          <label class="filter-label">Minimum price</label>
-          <span class="filter-value">\${{ filters.minPrice }}</span>
+      <div class="store-inline-filter-select">
+        <label class="visually-hidden" for="icon-rarity-filter">Filter by rarity</label>
+        <div class="store-inline-select-shell">
+          <select
+            id="icon-rarity-filter"
+            class="form-select form-select-sm"
+            aria-label="Filter by rarity"
+            :value="filters.rarity"
+            @change="$emit('update-rarity', $event.target.value)"
+          >
+            <option value="all">Rarity: All</option>
+            <option value="common">Rarity: Common</option>
+            <option value="rare">Rarity: Rare</option>
+            <option value="epic">Rarity: Epic</option>
+            <option value="legendary">Rarity: Legendary</option>
+          </select>
         </div>
-        <input
-          class="form-range"
-          type="range"
-          min="1"
-          :max="priceCap"
-          step="1"
-          :value="filters.minPrice"
-          @input="$emit('update-min-price', Number($event.target.value))"
-        />
       </div>
-      <div class="store-inline-filter-range">
-        <div class="filter-slider-labels">
-          <label class="filter-label">Maximum price</label>
-          <span class="filter-value">\${{ filters.maxPrice }}</span>
+      <div class="store-inline-filter-select">
+        <label class="visually-hidden" for="icon-sort-filter">Sort icons</label>
+        <div class="store-inline-select-shell">
+          <select
+            id="icon-sort-filter"
+            class="form-select form-select-sm"
+            aria-label="Sort icons"
+            :value="filters.sortBy"
+            @change="$emit('update-sort', $event.target.value)"
+          >
+            <option value="featured">Sort: Featured</option>
+            <option value="price-asc">Sort: Price Low to High</option>
+            <option value="price-desc">Sort: Price High to Low</option>
+            <option value="name-asc">Sort: Name A to Z</option>
+            <option value="rarity-desc">Sort: Rarity</option>
+          </select>
         </div>
-        <input
-          class="form-range"
-          type="range"
-          min="1"
-          :max="priceCap"
-          step="1"
-          :value="filters.maxPrice"
-          @input="$emit('update-max-price', Number($event.target.value))"
-        />
+      </div>
+      <div class="store-inline-price-group">
+        <span class="store-inline-price-chip">Price</span>
+        <div class="store-inline-price-inputs">
+          <label class="visually-hidden" for="icon-min-price">Minimum price</label>
+          <div class="store-inline-price-field">
+            <span class="store-inline-price-prefix">$</span>
+            <input
+              id="icon-min-price"
+              class="form-control form-control-sm"
+              type="number"
+              inputmode="numeric"
+              min="1"
+              :max="filters.maxPrice"
+              step="1"
+              :value="filters.minPrice"
+              @change="updateMinPriceFromField"
+            />
+          </div>
+          <span class="store-inline-price-separator" aria-hidden="true">-</span>
+          <label class="visually-hidden" for="icon-max-price">Maximum price</label>
+          <div class="store-inline-price-field">
+            <span class="store-inline-price-prefix">$</span>
+            <input
+              id="icon-max-price"
+              class="form-control form-control-sm"
+              type="number"
+              inputmode="numeric"
+              :min="filters.minPrice"
+              :max="priceCap"
+              step="1"
+              :value="filters.maxPrice"
+              @change="updateMaxPriceFromField"
+            />
+          </div>
+        </div>
       </div>
     </div>
 
@@ -292,10 +379,13 @@ export default {
         >
           <div
             class="card app-surface h-100 store-item-card"
-            :class="{
-              'is-hovered': isHovered(entry.index),
-              'is-collapsed': isCollapsed(entry.index),
-            }"
+            :class="[
+              `tier-${getRarityTier(entry.item)}`,
+              {
+                'is-hovered': isHovered(entry.index),
+                'is-collapsed': isCollapsed(entry.index),
+              },
+            ]"
             role="button"
             tabindex="0"
             :aria-expanded="String(isHovered(entry.index))"
@@ -303,6 +393,9 @@ export default {
             @keydown="handleCardKeydown(entry.item, entry.index, $event)"
           >
             <div class="store-item-media-wrap">
+              <div class="store-item-rarity-badge" aria-label="Item rarity">
+                <i class="bi bi-stars" aria-hidden="true"></i>
+              </div>
               <img
                 class="card-img-top store-item-image"
                 :src="entry.item.img"
@@ -314,7 +407,6 @@ export default {
             </div>
             <div class="card-body store-item-body">
               <div class="store-item-name text-truncate">{{ entry.item.title }}</div>
-              <p class="store-item-summary">{{ entry.item.shortDescription }}</p>
             </div>
             <div class="card-footer border-0 bg-transparent store-item-footer">
               <button
@@ -322,7 +414,7 @@ export default {
                 type="button"
                 @click.stop="$emit('add-item', entry.item)"
               >
-                Add to cart
+                Unlock Icon
               </button>
             </div>
           </div>
