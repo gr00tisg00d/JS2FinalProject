@@ -1,5 +1,11 @@
 <script>
+import {
+  difficultyMissions,
+  projectFileBlueprints,
+  singlePlayerDifficulties,
+} from '@/data/homeChallenges.js'
 import { themeOptions } from '@/data/themes.js'
+import homeMenuLogo from '@/Images/website/owLJL.png'
 
 const DEFAULT_IDE_PALETTE = {
   syntaxKeyword: '#ff8f70',
@@ -41,7 +47,7 @@ function classifyIdentifier(line, startIndex, endIndex, value) {
     return 'property'
   }
 
-  return ''
+  return value ? '' : ''
 }
 
 function highlightJavaScriptLine(line = '') {
@@ -110,149 +116,168 @@ const REVIEW_GUIDES = [
   },
 ]
 
-function createBugDescriptor(id, correct, buggy, errorName, consoleText, fix) {
-  return {
-    id,
-    correct,
-    buggy,
-    errorName,
-    consoleText,
-    fix,
-  }
-}
-
-function buildChallengeTemplate() {
-  const template = [
-    'const challengeInput = [',
-    "  { file: 'auth.js', errors: 2, severity: 'high' },",
-    "  { file: 'store.js', errors: 1, severity: 'medium' },",
-    "  { file: 'profile.js', errors: 3, severity: 'critical' },",
-    "  { file: 'leaderboard.js', errors: 0, severity: 'low' },",
-    "  { file: 'session.js', errors: 1, severity: 'medium' },",
-    ']',
-    '',
-    'function normalizeFileName(name) {',
-    "  return name.replace('.js', '').toUpperCase();",
-    '}',
-    '',
-    'function formatSeverity(level) {',
-    '  return level.toUpperCase();',
-    '}',
-    '',
-    'function buildSummary(queue) {',
-    '  const summary = {',
-    '    totalErrors: 0,',
-    '    files: [],',
-    '    severities: [],',
-    '  };',
-    '',
-    '  for (const entry of queue) {',
-    '    summary.totalErrors += entry.errors;',
-    '    summary.files.push(normalizeFileName(entry.file));',
-    '    summary.severities.push(formatSeverity(entry.severity));',
-    '  }',
-    '',
-    '  return summary;',
-    '}',
-    '',
-    'function getPrimarySeverity(summary) {',
-    "  if (summary.severities.includes('CRITICAL')) {",
-    "    return 'critical';",
-    '  }',
-    '',
-    "  if (summary.severities.includes('HIGH')) {",
-    "    return 'high';",
-    '  }',
-    '',
-    "  return 'medium';",
-    '}',
-    '',
-    'function getReviewMessage(summary) {',
-    '  if (summary.totalErrors > 4) {',
-    "    return 'Review required before shipping.';",
-    '  }',
-    '',
-    "  return 'Ready for release.';",
-    '}',
-    '',
-    'function renderDiagnostics(queue) {',
-    '  const summary = buildSummary(queue);',
-    '  const average = summary.totalErrors / queue.length;',
-    '  const output = [];',
-    '',
-    "  output.push('Diagnostic summary');",
-    "  output.push('------------------');",
-    '  output.push(`Files scanned: ${summary.files.length}`);',
-    createBugDescriptor(
-      'reference-total-errors',
-      '  output.push(`Total errors: ${summary.totalErrors}`);',
-      '  output.push(`Total errors: ${summaryTotalErrors}`);',
-      'ReferenceError',
-      '`summaryTotalErrors` is not defined.',
-      'Use the existing `summary.totalErrors` property from the summary object.',
-    ),
-    createBugDescriptor(
-      'syntax-average-format',
-      '  output.push(`Average errors per file: ${average.toFixed(2)}`);',
-      '  output.push(`Average errors per file: ${average.toFixed(2}`);',
-      'SyntaxError',
-      'The `toFixed(2)` call is missing a closing parenthesis.',
-      'Close the method call so the template string expression parses correctly.',
-    ),
-    createBugDescriptor(
-      'type-severity-method',
-      '  output.push(`Highest severity: ${getPrimarySeverity(summary).toLowerCase()}`);',
-      '  output.push(`Highest severity: ${getPrimarySeverity(summary).toLowercase()}`);',
-      'TypeError',
-      '`toLowercase()` is not a valid JavaScript string method.',
-      'Use the real string method name: `toLowerCase()`.',
-    ),
-    '  output.push(`Review: ${getReviewMessage(summary)}`);',
-    "  output.push(`File roster: ${summary.files.join(', ')}`);",
-    '',
-    "  return output.join('\\n');",
-    '}',
-    '',
-    'function runChallenge() {',
-    '  const result = renderDiagnostics(challengeInput);',
-    '  return `${result}\\nRun complete.`;',
-    '}',
-    '',
-    'const output = runChallenge();',
-    'output;',
-  ]
-
-  while (template.length < 100) {
-    template.push(
-      `// watchpoint ${String(template.length + 1).padStart(3, '0')}: inspect the queue before shipping`,
-    )
-  }
-
-  return template
-}
-
-function shuffle(items) {
-  const clone = [...items]
-
-  for (let index = clone.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(Math.random() * (index + 1))
-    ;[clone[index], clone[swapIndex]] = [clone[swapIndex], clone[index]]
-  }
-
-  return clone
-}
-
 function normalizeCodeLine(line = '') {
   return line.replace(/\s+/g, ' ').trim()
 }
 
-const CHALLENGE_TEMPLATE = buildChallengeTemplate()
-const ALL_BUG_IDS = CHALLENGE_TEMPLATE.filter((entry) => typeof entry === 'object').map(
-  (entry) => entry.id,
-)
+function resolveModulePath(fromPath, specifier) {
+  if (!specifier.startsWith('.')) {
+    return specifier
+  }
+
+  const fromParts = fromPath.split('/')
+  fromParts.pop()
+
+  specifier.split('/').forEach((part) => {
+    if (!part || part === '.') {
+      return
+    }
+
+    if (part === '..') {
+      fromParts.pop()
+      return
+    }
+
+    fromParts.push(part)
+  })
+
+  return fromParts.join('/')
+}
+
+function buildBlueprintCode(file, useBuggyLines = false) {
+  return file.entries
+    .map((entry) => {
+      if (typeof entry === 'string') {
+        return entry
+      }
+
+      return useBuggyLines ? entry.buggy : entry.correct
+    })
+    .join('\n')
+}
+
+function transformVirtualModule(code) {
+  const exportedNames = []
+
+  let transformedCode = code.replace(
+    /^\s*import\s+\{\s*([^}]+)\s*\}\s+from\s+['"]([^'"]+)['"];?\s*$/gm,
+    (_, imports, specifier) => `const { ${imports.trim()} } = require('${specifier}');`,
+  )
+
+  transformedCode = transformedCode.replace(
+    /^\s*export\s+function\s+([A-Za-z_$][\w$]*)\s*\(/gm,
+    (_, name) => {
+      exportedNames.push(name)
+      return `function ${name}(`
+    },
+  )
+
+  transformedCode = transformedCode.replace(
+    /^\s*export\s+const\s+([A-Za-z_$][\w$]*)\s*=\s*/gm,
+    (_, name) => {
+      exportedNames.push(name)
+      return `const ${name} = `
+    },
+  )
+
+  if (exportedNames.length > 0) {
+    transformedCode += `\n${exportedNames.map((name) => `exports.${name} = ${name};`).join('\n')}`
+  }
+
+  return transformedCode
+}
+
+function extractExecutionLocation(error) {
+  const stack = String(error?.stack ?? '')
+  const match = stack.match(/<anonymous>:(\d+):(\d+)/)
+
+  if (!match) {
+    return null
+  }
+
+  return {
+    lineNumber: Number(match[1]),
+    columnNumber: Number(match[2]),
+  }
+}
+
+function formatRuntimeError(error) {
+  if (error instanceof SyntaxError) {
+    return 'SyntaxError'
+  }
+
+  if (error instanceof TypeError) {
+    return 'TypeError'
+  }
+
+  if (error instanceof ReferenceError) {
+    return 'ReferenceError'
+  }
+
+  return error?.name || 'RuntimeError'
+}
+
+function createValidationEntry(errorName, filePath, message, location = null) {
+  return {
+    errorName,
+    filePath,
+    message,
+    location,
+  }
+}
+const GAME_MODE_OPTIONS = [
+  {
+    id: 'custom-lobby',
+    title: 'Custom Lobby',
+    iconClass: 'bi-people-fill',
+    status: 'Online Soon',
+    available: false,
+  },
+  {
+    id: 'ranked-1v1',
+    title: '1v1 Ranked',
+    iconClass: 'bi-trophy-fill',
+    status: 'Online Soon',
+    available: false,
+  },
+  {
+    id: 'single-player',
+    title: 'Single Player',
+    iconClass: 'bi-terminal-fill',
+    status: 'Ready',
+    available: true,
+  },
+]
+const SINGLE_PLAYER_FORMATS = [
+  {
+    id: '3-minute',
+    title: '3 Mins',
+    subtitle: 'Classic sprint run with fast pressure.',
+    seconds: 180,
+  },
+  {
+    id: '5-minute',
+    title: '5 Mins',
+    subtitle: 'A more deliberate debug round.',
+    seconds: 300,
+  },
+  {
+    id: '10-minute',
+    title: '10 Mins',
+    subtitle: 'Long-form review with room to recover.',
+    seconds: 600,
+  },
+  {
+    id: 'infinite',
+    title: 'Infinite Time',
+    subtitle: 'Open practice mode without a countdown.',
+    seconds: Number.POSITIVE_INFINITY,
+  },
+]
 
 export default {
   name: 'HomePage',
+  emits: ['panel-update'],
   props: {
     userProfile: {
       type: Object,
@@ -261,9 +286,15 @@ export default {
   },
   data() {
     return {
+      homeView: 'menu',
+      menuScreen: 'mode-select',
+      menuNotice: '',
+      selectedGameMode: '',
+      selectedFormatId: SINGLE_PLAYER_FORMATS[0].id,
+      selectedDifficultyId: singlePlayerDifficulties[0].id,
       activeModalSection: 'mission',
-      currentCode: '',
-      starterCode: '',
+      missionFiles: [],
+      activeFileId: '',
       activeBugs: [],
       consoleEntries: [],
       secondsLeft: 180,
@@ -273,11 +304,37 @@ export default {
       missionsPlayed: 0,
       missionsCleared: 0,
       missionsExpired: 0,
+      isRunningMission: false,
       runCount: 0,
       bestClearSeconds: null,
     }
   },
   computed: {
+    gameModeOptions() {
+      return GAME_MODE_OPTIONS
+    },
+    singlePlayerFormats() {
+      return SINGLE_PLAYER_FORMATS
+    },
+    singlePlayerDifficulties() {
+      return singlePlayerDifficulties
+    },
+    activeFormat() {
+      return (
+        this.singlePlayerFormats.find((format) => format.id === this.selectedFormatId) ??
+        this.singlePlayerFormats[0]
+      )
+    },
+    activeDifficulty() {
+      return (
+        this.singlePlayerDifficulties.find(
+          (difficulty) => difficulty.id === this.selectedDifficultyId,
+        ) ?? this.singlePlayerDifficulties[0]
+      )
+    },
+    activeDifficultyConfig() {
+      return difficultyMissions[this.selectedDifficultyId] ?? difficultyMissions.easy
+    },
     activeTheme() {
       return (
         themeOptions.find((theme) => theme.name === this.userProfile.activeIDETheme) ??
@@ -302,6 +359,23 @@ export default {
         '--home-editor-syntax-comment': palette.syntaxComment,
       }
     },
+    currentFile() {
+      return (
+        this.missionFiles.find((file) => file.id === this.activeFileId) ??
+        this.missionFiles[0] ??
+        null
+      )
+    },
+    currentCode: {
+      get() {
+        return this.currentFile?.currentCode ?? ''
+      },
+      set(value) {
+        if (this.currentFile) {
+          this.currentFile.currentCode = value
+        }
+      },
+    },
     editorLineNumbers() {
       return this.currentCode.split('\n').map((_, index) => index + 1)
     },
@@ -309,16 +383,19 @@ export default {
       return this.currentCode.split('\n').map((line) => highlightJavaScriptLine(line))
     },
     formattedTime() {
+      if (!Number.isFinite(this.secondsLeft)) {
+        return 'INF'
+      }
+
       const minutes = String(Math.floor(this.secondsLeft / 60)).padStart(2, '0')
       const seconds = String(this.secondsLeft % 60).padStart(2, '0')
 
       return `${minutes}:${seconds}`
     },
     unresolvedBugCount() {
-      const currentLines = this.currentCode.split('\n')
-
       return this.activeBugs.filter((bug) => {
-        const line = currentLines[bug.lineNumber - 1] ?? ''
+        const file = this.missionFiles.find((entry) => entry.id === bug.fileId)
+        const line = file?.currentCode.split('\n')[bug.lineNumber - 1] ?? ''
 
         return normalizeCodeLine(line) !== normalizeCodeLine(bug.correct)
       }).length
@@ -332,38 +409,28 @@ export default {
         return 'Timer expired. Roll a fresh mission to keep playing.'
       }
 
-      return `${this.activeBugs.length} seeded issue(s). ${this.unresolvedBugCount} still unresolved.`
+      return `${this.activeDifficulty.title} mission: ${this.activeBugs.length} seeded issue(s) across ${this.missionFiles.length} file(s). ${this.unresolvedBugCount} still unresolved.`
     },
-    chatFeed() {
-      if (this.isSolved) {
-        return [
-          'Control room: clean run confirmed. That patch set ships.',
-          'Mentor bot: nice pacing. You solved the mission before the timer collapsed.',
-          'Ops note: roll another mission if you want a different mix of bug types.',
-        ]
+    isSinglePlayerSession() {
+      return this.selectedGameMode === 'single-player'
+    },
+    panelState() {
+      return {
+        available: this.homeView === 'game',
+        activeSection: this.activeModalSection,
+        missionSummary: this.missionSummary,
+        activeBugs: this.activeBugs.map((bug) => ({
+          id: bug.id,
+          errorName: bug.errorName,
+          fileLabel: bug.fileLabel,
+          lineNumber: bug.lineNumber,
+          fix: bug.fix,
+        })),
+        unresolvedBugCount: this.unresolvedBugCount,
+        reviewGuides: this.reviewGuides,
+        seededBugCount: this.activeBugs.length,
+        sessionStatCards: this.sessionStatCards,
       }
-
-      if (this.missionExpired) {
-        return [
-          'Control room: timeout. Snapshot the lesson and reset the file.',
-          'Mentor bot: start with the line number from the console next time, not the whole file.',
-          'Ops note: Syntax errors usually block the rest of the run, so clear those first.',
-        ]
-      }
-
-      if (this.secondsLeft <= 60) {
-        return [
-          'Control room: final minute. Fix the parser issue first if one is still active.',
-          'Mentor bot: after syntax, check misspelled method names and undefined variables.',
-          'Ops note: run often. Short feedback loops win missions.',
-        ]
-      }
-
-      return [
-        'Control room: read the console, patch one failure at a time, then rerun.',
-        'Mentor bot: ReferenceError means the name is wrong. TypeError means the value is wrong.',
-        'Ops note: the review panel has quick reminders for the common JavaScript failures in this mode.',
-      ]
     },
     sessionStatCards() {
       return [
@@ -382,45 +449,174 @@ export default {
     reviewGuides() {
       return REVIEW_GUIDES
     },
+    homeMenuLogo() {
+      return homeMenuLogo
+    },
+  },
+  watch: {
+    panelState: {
+      immediate: true,
+      deep: true,
+      handler(state) {
+        this.$emit('panel-update', state)
+      },
+    },
   },
   mounted() {
-    this.resetMission()
+    this.menuNotice = 'Select a queue to boot the debug rig.'
   },
   beforeUnmount() {
     this.stopTimer()
   },
   methods: {
-    buildMission(activeBugIds) {
-      const codeLines = []
-      const activeBugs = []
+    validateMissionRuntime() {
+      const activeModules = new Map(
+        this.missionFiles.map((file) => [file.path, { code: file.currentCode, label: file.label }]),
+      )
 
-      CHALLENGE_TEMPLATE.forEach((entry, index) => {
-        if (typeof entry === 'string') {
-          codeLines.push(entry)
-          return
+      projectFileBlueprints.forEach((file) => {
+        if (!activeModules.has(file.path)) {
+          activeModules.set(file.path, {
+            code: buildBlueprintCode(file, false),
+            label: file.label,
+          })
         }
-
-        if (activeBugIds.includes(entry.id)) {
-          codeLines.push(entry.buggy)
-          activeBugs.push({ ...entry, lineNumber: index + 1 })
-          return
-        }
-
-        codeLines.push(entry.correct)
       })
 
+      const moduleCache = new Map()
+      const syntaxFailures = []
+
+      this.missionFiles.forEach((file) => {
+        try {
+          new Function('require', 'exports', 'module', transformVirtualModule(file.currentCode))
+        } catch (error) {
+          syntaxFailures.push(
+            createValidationEntry(
+              formatRuntimeError(error),
+              file.path,
+              error?.message ?? 'Unknown syntax failure.',
+              extractExecutionLocation(error),
+            ),
+          )
+        }
+      })
+
+      if (syntaxFailures.length > 0) {
+        return syntaxFailures
+      }
+
+      const executeModule = (modulePath) => {
+        if (moduleCache.has(modulePath)) {
+          return moduleCache.get(modulePath)
+        }
+
+        const moduleEntry = activeModules.get(modulePath)
+
+        if (!moduleEntry) {
+          throw new Error(`Cannot resolve module '${modulePath}'.`)
+        }
+
+        const module = { exports: {} }
+        moduleCache.set(modulePath, module.exports)
+
+        const transformedCode = transformVirtualModule(moduleEntry.code)
+        let runner
+
+        try {
+          runner = new Function('require', 'exports', 'module', transformedCode)
+        } catch (error) {
+          error.modulePath = modulePath
+          throw error
+        }
+
+        const localRequire = (specifier) => {
+          const resolvedPath = resolveModulePath(modulePath, specifier)
+          return executeModule(resolvedPath)
+        }
+
+        try {
+          runner(localRequire, module.exports, module)
+        } catch (error) {
+          if (!error.modulePath) {
+            error.modulePath = modulePath
+          }
+          throw error
+        }
+        moduleCache.set(modulePath, module.exports)
+        return module.exports
+      }
+
+      try {
+        executeModule('src/main.js')
+        return []
+      } catch (error) {
+        const location = extractExecutionLocation(error)
+        const errorName = formatRuntimeError(error)
+        const filePath = error?.modulePath ?? this.currentFile?.path ?? 'src/main.js'
+
+        return [
+          createValidationEntry(
+            errorName,
+            filePath,
+            error?.message ?? 'Unknown runtime failure.',
+            location,
+          ),
+        ]
+      }
+    },
+    buildMission() {
+      const activeBugIds = this.activeDifficultyConfig.bugIds
+      const selectedFileIds = new Set(this.activeDifficultyConfig.fileIds)
+      const missionFiles = []
+      const activeBugs = []
+
+      projectFileBlueprints
+        .filter((file) => selectedFileIds.has(file.id))
+        .forEach((file) => {
+          const codeLines = []
+
+          file.entries.forEach((entry, index) => {
+            if (typeof entry === 'string') {
+              codeLines.push(entry)
+              return
+            }
+
+            if (activeBugIds.includes(entry.id)) {
+              codeLines.push(entry.buggy)
+              activeBugs.push({
+                ...entry,
+                fileId: file.id,
+                fileLabel: file.label,
+                filePath: file.path,
+                lineNumber: index + 1,
+              })
+              return
+            }
+
+            codeLines.push(entry.correct)
+          })
+
+          const starterCode = codeLines.join('\n')
+          missionFiles.push({
+            id: file.id,
+            label: file.label,
+            path: file.path,
+            starterCode,
+            currentCode: starterCode,
+          })
+        })
+
       return {
-        code: codeLines.join('\n'),
+        files: missionFiles,
         activeBugs,
       }
     },
-    pickActiveBugIds() {
-      const bugCount = Math.floor(Math.random() * ALL_BUG_IDS.length) + 1
-
-      return shuffle(ALL_BUG_IDS).slice(0, bugCount)
-    },
     startTimer() {
       this.stopTimer()
+
+      if (!Number.isFinite(this.secondsLeft)) {
+        return
+      }
 
       this.timerId = window.setInterval(() => {
         if (this.isSolved) {
@@ -433,7 +629,14 @@ export default {
           this.missionsExpired += 1
           this.stopTimer()
           this.consoleEntries = [
-            { type: 'error', text: 'Timer expired. Mission failed before a clean run.' },
+            {
+              type: 'error',
+              errorName: 'LogicError',
+              text: 'Timer expired. Mission failed before a clean run.',
+              hintText:
+                'Reset the mission, reopen the first red error, and clear parser errors before tracing logic bugs.',
+              showHint: false,
+            },
             { type: 'info', text: 'Reset the mission to roll a fresh set of JavaScript errors.' },
           ]
           return
@@ -449,23 +652,24 @@ export default {
       }
     },
     resetMission() {
-      const mission = this.buildMission(this.pickActiveBugIds())
+      const mission = this.buildMission()
+      const roundSeconds = this.activeFormat?.seconds ?? 180
 
       this.missionsPlayed += 1
-      this.currentCode = mission.code
-      this.starterCode = mission.code
+      this.missionFiles = mission.files
+      this.activeFileId = mission.files[0]?.id ?? ''
       this.activeBugs = mission.activeBugs
       this.consoleEntries = [
         {
           type: 'info',
-          text: `Mission ${this.missionsPlayed} loaded. ${mission.activeBugs.length} error(s) seeded into the file.`,
+          text: `Mission ${this.missionsPlayed} loaded. ${mission.activeBugs.length} error(s) seeded across ${mission.files.length} project file(s).`,
         },
         {
           type: 'info',
-          text: 'Press Run to inspect the failures, then patch the broken lines before the clock hits zero.',
+          text: 'Open each file tab, trace the imports, and patch the broken lines before the clock hits zero.',
         },
       ]
-      this.secondsLeft = 180
+      this.secondsLeft = roundSeconds
       this.isSolved = false
       this.missionExpired = false
       this.startTimer()
@@ -476,65 +680,117 @@ export default {
       })
     },
     restoreStarterCode() {
-      this.currentCode = this.starterCode
+      this.missionFiles = this.missionFiles.map((file) => ({
+        ...file,
+        currentCode: file.starterCode,
+      }))
       this.consoleEntries = [
-        { type: 'info', text: 'Starter code restored. Run again to recheck the current mission.' },
+        {
+          type: 'info',
+          text: 'Starter project restored. Run again to recheck every linked file in the mission.',
+        },
       ]
     },
-    runMission() {
-      if (this.missionExpired || this.isSolved) {
+    syncCurrentEditorBuffer() {
+      const liveEditorValue = this.$refs.editorTextarea?.value
+
+      if (typeof liveEditorValue === 'string' && this.currentFile) {
+        this.currentFile.currentCode = liveEditorValue
+      }
+    },
+    async runMission() {
+      if (this.missionExpired) {
         this.resetMission()
         return
       }
 
       this.runCount += 1
+      this.syncCurrentEditorBuffer()
+      await this.$nextTick()
 
-      const currentLines = this.currentCode.split('\n')
+      const runLabel = `Run #${this.runCount}`
+
+      this.isSolved = false
+      this.isRunningMission = true
+      this.consoleEntries = [
+        {
+          type: 'info',
+          text: `${runLabel}: compiling ${this.missionFiles.length} file(s) and running mission validation...`,
+        },
+      ]
+
+      await this.$nextTick()
+
       const unresolved = this.activeBugs.filter((bug) => {
-        const line = currentLines[bug.lineNumber - 1] ?? ''
+        const file = this.missionFiles.find((entry) => entry.id === bug.fileId)
+        const line = file?.currentCode.split('\n')[bug.lineNumber - 1] ?? ''
 
         return normalizeCodeLine(line) !== normalizeCodeLine(bug.correct)
       })
 
-      if (unresolved.length > 0) {
+      const validationFailures = this.validateMissionRuntime()
+      const runtimeFailureCount = validationFailures.length
+
+      if (runtimeFailureCount > 0 || unresolved.length > 0) {
+        const runtimeEntries = validationFailures.map((failure) => ({
+          type: 'error',
+          errorName: failure.errorName,
+          text: `${failure.errorName}${failure.location ? ` in ${failure.filePath}:${failure.location.lineNumber}:${failure.location.columnNumber}` : ` in ${failure.filePath}`} - ${failure.message}`,
+          showHint: false,
+        }))
+
         this.consoleEntries = [
           {
             type: 'error',
-            text: `Run failed. ${unresolved.length} unresolved error(s) still block execution.`,
+            errorName: 'LogicError',
+            text: `${runLabel} failed. ${unresolved.length} seeded issue(s) and ${runtimeFailureCount} validation error(s) still block execution.`,
+            hintText:
+              'Start with the first error below. Fix syntax errors first, then rerun so runtime and seeded line issues are easier to isolate.',
+            showHint: false,
           },
+          ...runtimeEntries,
           ...unresolved.map((bug) => ({
             type: 'error',
-            text: `${bug.errorName} at line ${bug.lineNumber}: ${bug.consoleText}`,
+            errorName: bug.errorName,
+            text: `${bug.errorName} in ${bug.filePath}:${bug.lineNumber} - ${bug.consoleText}`,
+            hintText: bug.fix,
+            showHint: false,
           })),
           {
             type: 'hint',
             text: 'Open the Review tab for the JavaScript error cheat sheet and fix patterns.',
           },
         ]
+        this.isRunningMission = false
         return
       }
 
       this.isSolved = true
       this.stopTimer()
-      const clearSeconds = 180 - this.secondsLeft
+      const clearSeconds = Number.isFinite(this.secondsLeft)
+        ? (this.activeFormat?.seconds ?? 180) - this.secondsLeft
+        : null
       this.missionsCleared += 1
 
-      if (this.bestClearSeconds === null || clearSeconds < this.bestClearSeconds) {
+      if (
+        clearSeconds !== null &&
+        (this.bestClearSeconds === null || clearSeconds < this.bestClearSeconds)
+      ) {
         this.bestClearSeconds = clearSeconds
       }
 
       this.consoleEntries = [
-        { type: 'success', text: 'Build succeeded. No seeded errors remain.' },
-        { type: 'success', text: 'Diagnostic summary' },
-        { type: 'success', text: '------------------' },
-        { type: 'success', text: 'Files scanned: 5' },
-        { type: 'success', text: 'Total errors: 7' },
-        { type: 'success', text: 'Average errors per file: 1.40' },
-        { type: 'success', text: 'Highest severity: critical' },
-        { type: 'success', text: 'Review: Review required before shipping.' },
-        { type: 'success', text: 'File roster: AUTH, STORE, PROFILE, LEADERBOARD, SESSION' },
+        { type: 'success', text: `${runLabel} succeeded. No seeded errors remain.` },
+        { type: 'success', text: `Difficulty: ${this.activeDifficulty.title}` },
+        { type: 'success', text: `Files scanned: ${this.missionFiles.length}` },
+        { type: 'success', text: `Seeded errors cleared: ${this.activeBugs.length}` },
+        {
+          type: 'success',
+          text: `Project chain: ${this.missionFiles.map((file) => file.label).join(' -> ')}`,
+        },
         { type: 'success', text: 'Run complete.' },
       ]
+      this.isRunningMission = false
     },
     syncEditorScroll(event) {
       if (this.$refs.editorGutter) {
@@ -559,8 +815,62 @@ export default {
         target.selectionEnd = start + indent.length
       })
     },
+    selectEditorFile(fileId) {
+      this.activeFileId = fileId
+      this.$nextTick(() => {
+        if (this.$refs.editorGutter) {
+          this.$refs.editorGutter.scrollTop = 0
+        }
+
+        if (this.$refs.editorHighlight) {
+          this.$refs.editorHighlight.scrollTop = 0
+          this.$refs.editorHighlight.scrollLeft = 0
+        }
+      })
+    },
     selectSideTab(section) {
       this.activeModalSection = section
+    },
+    selectGameMode(mode) {
+      if (!mode.available) {
+        this.menuNotice = `${mode.title} unlocks in a later build.`
+        return
+      }
+
+      this.selectedGameMode = mode.id
+      this.menuScreen = 'single-player-formats'
+      this.menuNotice = 'Pick a clock format and difficulty for the solo debug run.'
+    },
+    backToModeSelect() {
+      this.menuScreen = 'mode-select'
+      this.menuNotice = 'Select a queue to boot the debug rig.'
+    },
+    selectFormat(formatId) {
+      this.selectedFormatId = formatId
+    },
+    selectDifficulty(difficultyId) {
+      this.selectedDifficultyId = difficultyId
+    },
+    returnToMenu() {
+      this.stopTimer()
+      this.homeView = 'menu'
+      this.menuScreen = 'mode-select'
+      this.menuNotice = 'Select a queue to boot the debug rig.'
+      this.selectedGameMode = ''
+      this.activeModalSection = 'mission'
+      this.missionFiles = []
+      this.activeFileId = ''
+      this.activeBugs = []
+      this.consoleEntries = []
+      this.missionExpired = false
+      this.isSolved = false
+    },
+    launchSinglePlayer() {
+      this.selectedGameMode = 'single-player'
+      this.activeModalSection = 'mission'
+      this.homeView = 'game'
+      this.menuNotice = ''
+      this.resetMission()
     },
     consoleEntryClass(type) {
       return {
@@ -570,6 +880,35 @@ export default {
         info: type === 'info',
       }
     },
+    resolveConsoleHint(entry) {
+      if (entry.hintText) {
+        return entry.hintText
+      }
+
+      const guide = this.reviewGuides.find((item) => item.title === entry.errorName)
+
+      if (guide) {
+        return `${guide.summary} ${guide.fix}`
+      }
+
+      const fallbackGuide = this.reviewGuides.find((item) => item.title === 'LogicError')
+      return fallbackGuide ? `${fallbackGuide.summary} ${fallbackGuide.fix}` : ''
+    },
+    shouldShowConsoleHintButton(entry) {
+      return (
+        this.isSinglePlayerSession &&
+        entry.type === 'error' &&
+        Boolean(this.resolveConsoleHint(entry))
+      )
+    },
+    toggleConsoleHint(entry) {
+      if (!this.shouldShowConsoleHintButton(entry)) {
+        return
+      }
+
+      entry.hintText = this.resolveConsoleHint(entry)
+      entry.showHint = !entry.showHint
+    },
   },
 }
 </script>
@@ -578,25 +917,151 @@ export default {
   <main
     class="w-100 flex-grow-1 py-3 px-2 px-lg-3 d-flex flex-column overflow-hidden app-page-shell"
   >
-    <div class="home-layout" :style="editorThemeStyle">
+    <section
+      v-if="homeView === 'menu'"
+      class="app-surface rounded p-3 p-lg-4 h-100 overflow-hidden home-menu-shell"
+      :style="editorThemeStyle"
+    >
+      <div class="home-menu-frame">
+        <div
+          v-if="menuScreen === 'mode-select'"
+          class="home-menu-brand"
+          aria-label="Find The Err0r"
+        >
+          <!-- <img class="home-menu-brand-image" :src="homeMenuLogo" alt="Find The Err0r" /> -->
+        </div>
+        <div class="home-menu-panel">
+          <div v-if="menuScreen === 'mode-select'" class="menu-option-grid">
+            <button
+              v-for="mode in gameModeOptions"
+              :key="mode.id"
+              class="menu-option-card"
+              :class="{ 'menu-option-card--disabled': !mode.available }"
+              type="button"
+              @click="selectGameMode(mode)"
+            >
+              <div class="menu-option-topline">
+                <span class="menu-option-title">{{ mode.title }}</span>
+                <span class="menu-option-status">{{ mode.status }}</span>
+              </div>
+              <div class="menu-option-icon-shell" aria-hidden="true">
+                <i class="bi menu-option-icon" :class="mode.iconClass"></i>
+              </div>
+            </button>
+          </div>
+
+          <div v-else class="menu-submenu-shell">
+            <div class="menu-submenu-header">
+              <button class="menu-back-button" type="button" @click="backToModeSelect()">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                <span>Back</span>
+              </button>
+              <div>
+                <h2 class="menu-submenu-title mb-1">Single Player</h2>
+                <p class="menu-submenu-copy mb-0">
+                  Choose the clock format and project complexity for your run.
+                </p>
+              </div>
+            </div>
+
+            <div class="menu-setup-section">
+              <div class="menu-setup-title">Time Limit</div>
+              <div class="menu-option-grid menu-option-grid--formats">
+                <button
+                  v-for="format in singlePlayerFormats"
+                  :key="format.id"
+                  class="menu-option-card menu-option-card--format"
+                  :class="{ 'menu-option-card--selected': format.id === selectedFormatId }"
+                  type="button"
+                  @click="selectFormat(format.id)"
+                >
+                  <div class="menu-option-topline">
+                    <span class="menu-option-title">{{ format.title }}</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div class="menu-setup-section">
+              <div class="menu-setup-title">Difficulty</div>
+              <div class="menu-option-grid menu-option-grid--difficulties">
+                <button
+                  v-for="difficulty in singlePlayerDifficulties"
+                  :key="difficulty.id"
+                  class="menu-option-card menu-option-card--difficulty"
+                  :class="{ 'menu-option-card--selected': difficulty.id === selectedDifficultyId }"
+                  type="button"
+                  @click="selectDifficulty(difficulty.id)"
+                >
+                  <div class="menu-option-topline">
+                    <span class="menu-option-title">{{ difficulty.title }}</span>
+                  </div>
+                  <p class="menu-option-copy mb-0">{{ difficulty.summary }}</p>
+                </button>
+              </div>
+            </div>
+
+            <div class="menu-launch-row">
+              <button
+                class="btn btn-primary menu-launch-button"
+                type="button"
+                @click="launchSinglePlayer()"
+              >
+                Start Run
+              </button>
+              <span class="menu-launch-meta">
+                {{ activeFormat.title }} • {{ activeDifficulty.summary }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div v-else class="home-layout" :style="editorThemeStyle">
       <section class="app-surface rounded p-2 p-lg-3 h-100 overflow-hidden home-game-shell">
         <div class="home-game-grid">
           <section class="home-workbench">
             <article class="editor-card">
               <div class="editor-card-header">
-                <span class="editor-pill">main.js</span>
+                <div class="editor-header-main">
+                  <div class="editor-file-tabs" role="tablist" aria-label="Project files">
+                    <button
+                      v-for="file in missionFiles"
+                      :key="file.id"
+                      class="editor-file-tab"
+                      :class="{ active: file.id === activeFileId }"
+                      type="button"
+                      role="tab"
+                      :aria-selected="file.id === activeFileId"
+                      @click="selectEditorFile(file.id)"
+                    >
+                      {{ file.label }}
+                    </button>
+                  </div>
+                  <span v-if="currentFile" class="editor-file-path">{{ currentFile.path }}</span>
+                </div>
                 <div class="editor-header-actions">
-                  <div class="mission-timer" :class="{ danger: secondsLeft <= 60 && !isSolved }">
-                    <strong>{{ formattedTime }}</strong>
+                  <div
+                    class="mission-timer"
+                    :class="{ danger: secondsLeft <= 60 && !isSolved, running: isRunningMission }"
+                  >
+                    <strong>{{ isRunningMission ? 'RUN' : formattedTime }}</strong>
                   </div>
                   <button
                     class="btn btn-primary editor-run-button"
+                    :class="{ 'editor-run-button--running': isRunningMission }"
                     type="button"
                     :aria-label="missionExpired || isSolved ? 'Load new mission' : 'Run code'"
                     :title="missionExpired || isSolved ? 'Load new mission' : 'Run code'"
+                    :disabled="isRunningMission"
                     @click="runMission"
                   >
-                    <i class="bi bi-play-fill" aria-hidden="true"></i>
+                    <i
+                      class="bi"
+                      :class="isRunningMission ? 'bi-arrow-repeat' : 'bi-play-fill'"
+                      aria-hidden="true"
+                    ></i>
                   </button>
                 </div>
               </div>
@@ -608,13 +1073,16 @@ export default {
                   </span>
                 </div>
                 <div class="editor-code-layer">
-                  <pre ref="editorHighlight" class="editor-highlight" aria-hidden="true"><div
+                  <div ref="editorHighlight" class="editor-highlight" aria-hidden="true">
+                    <div
                       v-for="(line, index) in highlightedCodeLines"
                       :key="`code-${index}`"
                       class="editor-highlight-line"
                       v-html="line"
-                    ></div></pre>
+                    ></div>
+                  </div>
                   <textarea
+                    ref="editorTextarea"
                     v-model="currentCode"
                     class="editor-textarea"
                     spellcheck="false"
@@ -628,152 +1096,43 @@ export default {
           </section>
 
           <aside class="home-side-panels">
+            <div class="console-toolbar">
+              <button class="console-back-button" type="button" @click="returnToMenu()">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                <span>Back To Menu</span>
+              </button>
+            </div>
+
             <article class="console-card console-side-card">
               <div class="console-header">
                 <span class="editor-pill">Console</span>
                 <span class="editor-meta">Always open</span>
               </div>
               <div class="console-body">
-                <div
-                  v-for="(entry, index) in consoleEntries"
-                  :key="`${entry.type}-${index}`"
-                  class="console-line"
-                  :class="consoleEntryClass(entry.type)"
-                >
-                  {{ entry.text }}
-                </div>
+                <template v-for="(entry, index) in consoleEntries" :key="`${entry.type}-${index}`">
+                  <div class="console-line" :class="consoleEntryClass(entry.type)">
+                    <div class="console-line-text">{{ entry.text }}</div>
+                    <button
+                      v-if="shouldShowConsoleHintButton(entry)"
+                      class="console-hint-button"
+                      type="button"
+                      @click="toggleConsoleHint(entry)"
+                    >
+                      {{ entry.showHint ? 'Hide Hint' : 'Hint' }}
+                    </button>
+                  </div>
+                  <div
+                    v-if="entry.showHint && entry.hintText"
+                    class="console-line console-line-inline-hint hint"
+                  >
+                    {{ entry.hintText }}
+                  </div>
+                </template>
               </div>
             </article>
           </aside>
         </div>
       </section>
-
-      <aside class="home-chat-dock">
-        <article class="chat-card home-chat-card">
-          <div class="chat-header">
-            <div class="chat-tab-row" role="tablist" aria-label="Side panels">
-              <button
-                class="chat-tab"
-                :class="{ active: activeModalSection === 'chat' }"
-                type="button"
-                role="tab"
-                :aria-selected="activeModalSection === 'chat'"
-                @click="selectSideTab('chat')"
-              >
-                Chat
-              </button>
-              <button
-                class="chat-tab"
-                :class="{ active: activeModalSection === 'mission' }"
-                type="button"
-                role="tab"
-                :aria-selected="activeModalSection === 'mission'"
-                @click="selectSideTab('mission')"
-              >
-                Mission
-              </button>
-              <button
-                class="chat-tab"
-                :class="{ active: activeModalSection === 'review' }"
-                type="button"
-                role="tab"
-                :aria-selected="activeModalSection === 'review'"
-                @click="selectSideTab('review')"
-              >
-                Review
-              </button>
-              <button
-                class="chat-tab"
-                :class="{ active: activeModalSection === 'stats' }"
-                type="button"
-                role="tab"
-                :aria-selected="activeModalSection === 'stats'"
-                @click="selectSideTab('stats')"
-              >
-                Stats
-              </button>
-            </div>
-          </div>
-          <div class="chat-body">
-            <div v-if="activeModalSection === 'chat'" class="chat-feed">
-              <div v-for="message in chatFeed" :key="message" class="chat-bubble">
-                {{ message }}
-              </div>
-            </div>
-
-            <div v-else-if="activeModalSection === 'mission'" class="settings-panel">
-              <div class="settings-action-row">
-                <button class="btn btn-primary btn-sm" type="button" @click="resetMission()">
-                  New Mission
-                </button>
-                <button
-                  class="btn btn-outline-light btn-sm"
-                  type="button"
-                  @click="restoreStarterCode()"
-                >
-                  Restore Starter
-                </button>
-              </div>
-              <p class="panel-copy mb-0">
-                {{ missionSummary }}
-              </p>
-              <div class="mission-stat-row">
-                <div class="mission-stat-chip">
-                  <span>Seeded</span>
-                  <strong>{{ activeBugs.length }}</strong>
-                </div>
-                <div class="mission-stat-chip">
-                  <span>Remaining</span>
-                  <strong>{{ unresolvedBugCount }}</strong>
-                </div>
-              </div>
-              <div class="mission-issue-list">
-                <div v-for="bug in activeBugs" :key="bug.id" class="mission-issue-card">
-                  <div class="mission-issue-title">{{ bug.errorName }}</div>
-                  <div class="mission-issue-copy">Line {{ bug.lineNumber }}: {{ bug.fix }}</div>
-                </div>
-              </div>
-            </div>
-
-            <div v-else-if="activeModalSection === 'review'" class="settings-panel">
-              <div class="review-grid">
-                <div v-for="guide in reviewGuides" :key="guide.title" class="review-card">
-                  <div class="review-title">{{ guide.title }}</div>
-                  <p class="review-copy mb-0">{{ guide.summary }}</p>
-                  <div class="review-fix">Fix: {{ guide.fix }}</div>
-                </div>
-              </div>
-            </div>
-
-            <div v-else class="settings-panel">
-              <div class="side-stat-grid">
-                <div v-for="card in sessionStatCards" :key="card.label" class="side-stat-card">
-                  <span>{{ card.label }}</span>
-                  <strong>{{ card.value }}</strong>
-                </div>
-              </div>
-              <div class="player-summary">
-                <div class="player-summary-row">
-                  <span>Operator</span>
-                  <strong>{{ userProfile.displayName }}</strong>
-                </div>
-                <div class="player-summary-row">
-                  <span>Rank</span>
-                  <strong>{{ userProfile.rankLabel }}</strong>
-                </div>
-                <div class="player-summary-row">
-                  <span>Lifetime success rate</span>
-                  <strong>{{ userProfile.successRate }}%</strong>
-                </div>
-                <div class="player-summary-row">
-                  <span>Current level</span>
-                  <strong>{{ userProfile.level }}</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-        </article>
-      </aside>
     </div>
   </main>
 </template>
@@ -783,16 +1142,208 @@ export default {
   min-height: 0;
 }
 
-.home-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.22fr) minmax(19rem, 21rem);
-  gap: 1rem;
+.home-menu-shell {
+  display: flex;
   flex: 1 1 auto;
   min-height: 0;
-  align-items: stretch;
+  background:
+    radial-gradient(circle at top, rgba(255, 214, 90, 0.08), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.08)),
+    linear-gradient(180deg, rgba(15, 50, 77, 0.98), rgba(8, 19, 29, 0.98));
+}
+
+.home-menu-frame {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: 0;
+  transform: translateY(-1.25rem);
+}
+
+.home-menu-panel {
+  display: grid;
+  gap: 1.25rem;
+  width: min(62rem, 100%);
+  padding: clamp(1.1rem, 2vw, 1.75rem);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(180deg, rgba(7, 23, 36, 0.74), rgba(7, 23, 36, 0.42)), rgba(8, 19, 29, 0.72);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 1.5rem 3rem rgba(0, 0, 0, 0.28);
+}
+
+.home-menu-brand {
+  display: grid;
+  justify-items: center;
+  width: min(62rem, 100%);
+  text-align: center;
+}
+
+.home-menu-brand-image {
+  display: block;
+  width: min(100%, clamp(9rem, 22vw, 17rem));
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0.9rem 1.8rem rgba(0, 0, 0, 0.28));
+}
+
+.menu-submenu-header {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.menu-submenu-title {
+  color: var(--screen-text);
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(1.15rem, 2.5vw, 1.85rem);
+  line-height: 1.5;
+}
+
+.menu-submenu-copy,
+.menu-option-copy {
+  color: var(--screen-muted);
+}
+
+.menu-option-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.menu-option-grid--formats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.menu-option-grid--difficulties {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.menu-option-card,
+.menu-back-button {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  background: rgba(8, 19, 29, 0.48);
+  color: var(--screen-text);
+}
+
+.menu-option-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  text-align: left;
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease,
+    background 0.16s ease;
+}
+
+.menu-option-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 214, 90, 0.34);
+  background: rgba(16, 37, 52, 0.64);
+}
+
+.menu-option-card--disabled {
+  opacity: 0.82;
+}
+
+.menu-option-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.menu-option-icon-shell {
+  display: grid;
+  place-items: center;
+  min-height: 8.5rem;
+  border-radius: 0.9rem;
+  background:
+    radial-gradient(circle at center, rgba(255, 214, 90, 0.12), transparent 58%),
+    rgba(8, 19, 29, 0.42);
+}
+
+.menu-option-icon {
+  font-size: clamp(3.4rem, 5vw, 4.6rem);
+  line-height: 1;
+  color: var(--screen-accent);
+  text-shadow:
+    0 0 16px rgba(255, 214, 90, 0.2),
+    0 0 32px rgba(142, 230, 255, 0.1);
+}
+
+.menu-option-title,
+.menu-option-status,
+.menu-back-button {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.menu-option-title {
+  color: var(--screen-text);
+}
+
+.menu-option-status {
+  color: var(--screen-accent);
+}
+
+.menu-submenu-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.menu-setup-section {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.menu-setup-title {
+  color: var(--screen-accent);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.menu-launch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.menu-launch-button {
+  min-width: 11rem;
+}
+
+.menu-launch-meta {
+  color: var(--screen-muted);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.54rem;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
+
+.menu-back-button {
+  justify-content: center;
+}
+
+.home-layout {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .home-game-shell {
+  flex: 1 1 auto;
   min-height: 0;
 }
 
@@ -812,9 +1363,9 @@ export default {
   min-height: 0;
 }
 
-.home-chat-dock {
-  min-height: 0;
+.console-toolbar {
   display: flex;
+  align-items: center;
 }
 
 .editor-card,
@@ -858,6 +1409,51 @@ export default {
   gap: 0.45rem;
 }
 
+.editor-header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.editor-file-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.editor-file-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.7rem;
+  background: rgba(8, 19, 29, 0.4);
+  color: var(--screen-muted);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.editor-file-tab.active,
+.menu-option-card--selected {
+  border-color: rgba(255, 214, 90, 0.42);
+  background: rgba(21, 49, 68, 0.72);
+  color: var(--screen-text);
+  box-shadow: inset 0 0 0 1px rgba(255, 214, 90, 0.08);
+}
+
+.editor-file-path {
+  color: var(--screen-muted);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .mission-timer {
   display: inline-flex;
   align-items: center;
@@ -873,6 +1469,11 @@ export default {
 .mission-timer.danger {
   border-color: rgba(255, 122, 89, 0.45);
   box-shadow: 0 0 20px rgba(255, 122, 89, 0.12);
+}
+
+.mission-timer.running {
+  border-color: rgba(142, 230, 255, 0.42);
+  box-shadow: 0 0 20px rgba(142, 230, 255, 0.14);
 }
 
 .review-title,
@@ -909,20 +1510,38 @@ export default {
   flex: 1 1 auto;
 }
 
-.chat-card {
+.ops-side-card {
   flex: 1 1 auto;
 }
 
-.home-chat-card {
-  width: 100%;
-  min-height: 0;
+.console-back-button,
+.menu-back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  background: rgba(8, 19, 29, 0.48);
+  color: var(--screen-text);
+}
+
+.console-back-button:hover,
+.menu-back-button:hover {
+  border-color: rgba(255, 214, 90, 0.34);
+  color: var(--screen-accent);
+}
+
+.chat-card {
+  flex: 1 1 auto;
 }
 
 .editor-card-header,
 .console-header,
 .chat-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
   padding: 0.55rem 0.85rem;
@@ -962,6 +1581,14 @@ export default {
   font-size: 0.95rem;
 }
 
+.editor-run-button--running {
+  pointer-events: none;
+}
+
+.editor-run-button--running i {
+  animation: editor-run-spin 0.8s linear infinite;
+}
+
 .editor-pill {
   display: inline-flex;
   align-items: center;
@@ -976,6 +1603,10 @@ export default {
 }
 
 .editor-surface {
+  --editor-font-size: 1.3rem;
+  --editor-line-height: 1.35;
+  --editor-pad-y: 1rem;
+  --editor-pad-x: 1.1rem;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   flex: 1 1 auto;
@@ -1002,15 +1633,15 @@ export default {
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   color: rgba(205, 230, 240, 0.42);
   font-family: 'VT323', monospace;
-  font-size: 1rem;
-  line-height: 1.35;
+  font-size: var(--editor-font-size);
+  line-height: var(--editor-line-height);
   user-select: none;
 }
 
 .editor-gutter span,
 .editor-highlight-line,
 .editor-textarea {
-  line-height: 1.35;
+  line-height: var(--editor-line-height);
 }
 
 .editor-highlight,
@@ -1018,10 +1649,16 @@ export default {
   width: 100%;
   height: 100%;
   min-height: 34rem;
-  padding: 1rem 1rem 1rem 1.1rem;
+  padding: var(--editor-pad-y) 1rem var(--editor-pad-y) var(--editor-pad-x);
   font-family: 'VT323', monospace;
-  font-size: 1rem;
-  white-space: pre;
+  font-size: var(--editor-font-size);
+  letter-spacing: 0;
+  tab-size: 2;
+  font-kerning: none;
+  font-variant-ligatures: none;
+  font-feature-settings:
+    'liga' 0,
+    'calt' 0;
 }
 
 .editor-highlight {
@@ -1031,6 +1668,7 @@ export default {
   overflow: hidden;
   color: #eefbff;
   pointer-events: none;
+  white-space: pre;
 }
 
 .editor-highlight-line {
@@ -1047,6 +1685,8 @@ export default {
   -webkit-text-fill-color: transparent;
   overflow: auto;
   caret-color: var(--home-editor-accent);
+  white-space: pre;
+  overflow-wrap: normal;
 }
 
 .editor-textarea::selection {
@@ -1055,6 +1695,16 @@ export default {
 
 .editor-textarea:focus {
   outline: none;
+}
+
+@keyframes editor-run-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .console-body {
@@ -1093,11 +1743,42 @@ export default {
 }
 
 .console-line {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
   padding: 0.55rem 0.75rem;
   border-radius: 0.7rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(8, 19, 29, 0.42);
   color: var(--screen-text);
+}
+
+.console-line-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.console-hint-button {
+  flex: 0 0 auto;
+  border: 1px solid rgba(142, 230, 255, 0.28);
+  border-radius: 999px;
+  padding: 0.28rem 0.6rem;
+  background: rgba(142, 230, 255, 0.12);
+  color: #b8f5ff;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.52rem;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.console-hint-button:hover {
+  border-color: rgba(142, 230, 255, 0.52);
+  background: rgba(142, 230, 255, 0.18);
+}
+
+.console-line-inline-hint {
+  margin-top: -0.1rem;
 }
 
 .console-line.error {
@@ -1224,8 +1905,13 @@ export default {
 }
 
 @media (max-width: 1199.98px) {
-  .home-layout {
-    grid-template-columns: minmax(0, 1fr);
+  .menu-option-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .menu-option-grid--formats,
+  .menu-option-grid--difficulties {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .home-game-grid {
@@ -1236,16 +1922,21 @@ export default {
     overflow: auto;
   }
 
-  .home-chat-dock {
-    min-height: 18rem;
-  }
-
   .console-side-card {
     max-height: 12rem;
   }
 }
 
 @media (max-width: 767.98px) {
+  .menu-option-grid--formats,
+  .menu-option-grid--difficulties,
+  .menu-option-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .menu-option-topline,
+  .menu-launch-row,
+  .editor-header-main,
   .editor-header-actions,
   .editor-card-header,
   .console-header,

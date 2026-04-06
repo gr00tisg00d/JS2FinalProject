@@ -5,6 +5,7 @@ import Navbar from '@/components/layout/Navbar.vue'
 import ProfilePage from '@/components/layout/ProfilePage.vue'
 import StorePage from '@/components/layout/StorePage.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
+import GlobalChatPanel from '@/components/layout/GlobalChatPanel.vue'
 import icons from '@/data/icons.js'
 import { userProfile } from '@/data/userProperties.js'
 
@@ -17,14 +18,24 @@ export default {
     ProfilePage,
     StorePage,
     AppFooter,
+    GlobalChatPanel,
   },
   data() {
     return {
-      activePage: 'store',
+      activePage: 'home',
       bootDurationMs: 1600,
       bootTimerId: null,
       isBooting: true,
       icons,
+      homePanelState: {
+        available: false,
+        activeSection: 'mission',
+        missionSummary: '',
+        activeBugs: [],
+        unresolvedBugCount: 0,
+        sessionStatCards: [],
+        reviewGuides: [],
+      },
       userProfile,
     }
   },
@@ -51,6 +62,32 @@ export default {
           userProfile: this.userProfile,
         },
       }[this.activePage]
+    },
+  },
+  methods: {
+    updateHomePanelState(state) {
+      this.homePanelState = state
+    },
+    handleHomePanelAction(action) {
+      const activeView = this.$refs.activePageView
+
+      if (this.activePage !== 'home' || !activeView) {
+        return
+      }
+
+      if (action === 'mission' || action === 'review' || action === 'stats') {
+        activeView.selectSideTab(action)
+        return
+      }
+
+      if (action === 'resetMission') {
+        activeView.resetMission()
+        return
+      }
+
+      if (action === 'restoreStarterCode') {
+        activeView.restoreStarterCode()
+      }
     },
   },
   mounted() {
@@ -93,7 +130,12 @@ export default {
               ></navbar>
               <div class="monitor-page-host">
                 <keep-alive>
-                  <component :is="activePageComponent" v-bind="activePageProps"></component>
+                  <component
+                    :is="activePageComponent"
+                    ref="activePageView"
+                    v-bind="activePageProps"
+                    @panel-update="updateHomePanelState"
+                  ></component>
                 </keep-alive>
               </div>
             </div>
@@ -101,6 +143,14 @@ export default {
         </div>
         <div class="monitor-stand" aria-hidden="true"></div>
       </div>
+    </div>
+    <div class="app-chat-wrap">
+      <global-chat-panel
+        :active-page="activePage"
+        :home-panel-state="homePanelState"
+        :user-profile="userProfile"
+        @home-action="handleHomePanelAction"
+      ></global-chat-panel>
     </div>
     <div class="app-footer-wrap">
       <app-footer></app-footer>

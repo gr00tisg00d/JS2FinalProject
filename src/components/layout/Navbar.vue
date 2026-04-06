@@ -253,9 +253,9 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: auto;
-  height: 100%;
-  aspect-ratio: 1 / 1;
+  width: calc(var(--navbar-box-height) + 0.25rem);
+  min-width: calc(var(--navbar-box-height) + 0.25rem);
+  height: calc(var(--navbar-box-height) + 0.25rem);
   flex: 0 0 auto;
   overflow: hidden;
   border: 2px solid rgba(214, 222, 193, 0.32);
@@ -268,12 +268,14 @@ export default {
 .navbar-avatar-image {
   display: block;
   width: 100%;
+  max-width: 100%;
   height: 100%;
-  object-fit: cover;
+  max-height: 100%;
+  padding: 0.2rem;
+  object-fit: contain;
   object-position: center;
   image-rendering: pixelated;
-  transform: scale(1.14);
-  transform-origin: center;
+  box-sizing: border-box;
 }
 
 .navbar-avatar-fallback {
