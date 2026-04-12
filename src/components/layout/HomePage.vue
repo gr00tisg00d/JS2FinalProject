@@ -305,6 +305,8 @@ export default {
       missionsCleared: 0,
       missionsExpired: 0,
       isRunningMission: false,
+      isConsoleRefreshing: false,
+      consoleRefreshTimerId: null,
       runCount: 0,
       bestClearSeconds: null,
     }
@@ -467,8 +469,29 @@ export default {
   },
   beforeUnmount() {
     this.stopTimer()
+    this.clearConsoleRefresh()
   },
   methods: {
+    triggerConsoleRefresh() {
+      this.isConsoleRefreshing = true
+
+      if (this.consoleRefreshTimerId !== null) {
+        window.clearTimeout(this.consoleRefreshTimerId)
+      }
+
+      this.consoleRefreshTimerId = window.setTimeout(() => {
+        this.isConsoleRefreshing = false
+        this.consoleRefreshTimerId = null
+      }, 700)
+    },
+    clearConsoleRefresh() {
+      if (this.consoleRefreshTimerId !== null) {
+        window.clearTimeout(this.consoleRefreshTimerId)
+        this.consoleRefreshTimerId = null
+      }
+
+      this.isConsoleRefreshing = false
+    },
     validateMissionRuntime() {
       const activeModules = new Map(
         this.missionFiles.map((file) => [file.path, { code: file.currentCode, label: file.label }]),
@@ -712,6 +735,7 @@ export default {
 
       this.isSolved = false
       this.isRunningMission = true
+      this.triggerConsoleRefresh()
       this.consoleEntries = [
         {
           type: 'info',
@@ -1106,9 +1130,14 @@ export default {
             <article class="console-card console-side-card">
               <div class="console-header">
                 <span class="editor-pill">Console</span>
-                <span class="editor-meta">Always open</span>
+                <span class="editor-meta">{{
+                  isConsoleRefreshing ? 'Refreshing...' : 'Always open'
+                }}</span>
               </div>
-              <div class="console-body">
+              <div
+                class="console-body"
+                :class="{ 'console-body--refreshing': isConsoleRefreshing }"
+              >
                 <template v-for="(entry, index) in consoleEntries" :key="`${entry.type}-${index}`">
                   <div class="console-line" :class="consoleEntryClass(entry.type)">
                     <div class="console-line-text">{{ entry.text }}</div>
@@ -1603,7 +1632,7 @@ export default {
 }
 
 .editor-surface {
-  --editor-font-size: 1.3rem;
+  --editor-font-size: 1.2rem;
   --editor-line-height: 1.35;
   --editor-pad-y: 1rem;
   --editor-pad-x: 1.1rem;
@@ -1707,7 +1736,24 @@ export default {
   }
 }
 
+@keyframes console-refresh-sweep {
+  0% {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+
+  15% {
+    opacity: 0.95;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
 .console-body {
+  position: relative;
   display: grid;
   gap: 0.45rem;
   padding: 1rem;
@@ -1715,6 +1761,29 @@ export default {
   overflow: auto;
   font-family: 'VT323', monospace;
   font-size: 1rem;
+}
+
+.console-body::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 214, 90, 0), rgba(255, 214, 90, 0.14), rgba(255, 214, 90, 0)),
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.04) 0,
+      rgba(255, 255, 255, 0.04) 1px,
+      rgba(255, 255, 255, 0) 1px,
+      rgba(255, 255, 255, 0) 8px
+    );
+  transform: translateY(-100%);
+}
+
+.console-body--refreshing::before {
+  opacity: 1;
+  animation: console-refresh-sweep 700ms ease-out;
 }
 
 .chat-body {
