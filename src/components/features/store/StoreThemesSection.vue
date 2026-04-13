@@ -1,6 +1,6 @@
 <script>
 import { themeOptions } from '@/data/themes.js'
-import { ThemeCatalog } from '@/models/storeModels.js'
+import { ThemeCatalog } from '@/models/catalogModels.js'
 
 export default {
   name: 'StoreThemesSection',

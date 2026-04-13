@@ -20,14 +20,11 @@ export default {
 </script>
 
 <template>
-  <!-- Container -->
   <div
     class="rounded app-surface store-sidebar-panel"
     :class="isOpen ? 'is-expanded' : 'is-collapsed'"
   >
-    <!-- Header Content -->
     <div class="panel-header p-3" :class="{ 'panel-header-split': !!$slots.actions }">
-      <!-- Cart Panel(actions) -->
       <template v-if="$slots.actions">
         <button
           class="sidebar-panel-toggle sidebar-panel-toggle-label"
@@ -53,7 +50,6 @@ export default {
         </button>
       </template>
 
-      <!-- Filter Panel -->
       <button
         v-else
         class="sidebar-panel-toggle"
@@ -69,7 +65,6 @@ export default {
       </button>
     </div>
 
-    <!-- Body Content -->
     <div class="sidebar-panel-body" :class="{ collapsed: !isOpen }">
       <div class="sidebar-panel-body-inner">
         <slot></slot>

@@ -1,6 +1,6 @@
 <script>
 import { bannerOptions } from '@/data/banners.js'
-import { BannerCatalog } from '@/models/storeModels.js'
+import { BannerCatalog } from '@/models/catalogModels.js'
 
 export default {
   name: 'StoreBannersSection',

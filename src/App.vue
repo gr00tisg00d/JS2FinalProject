@@ -7,7 +7,7 @@ import StorePage from '@/components/layout/StorePage.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import GlobalChatPanel from '@/components/layout/GlobalChatPanel.vue'
 import icons from '@/data/icons.js'
-import { userProfile } from '@/data/userProperties.js'
+import { userProfile } from '@/state/userProfileState.js'
 
 export default {
   name: 'App',
